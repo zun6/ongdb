@@ -43,8 +43,7 @@ public final class RelationshipDenseSelectionIterator<R> extends RelationshipDen
     {
         if ( next == RelationshipSelections.UNINITIALIZED )
         {
-            fetchNext();
-            next = relationshipCursor.relationshipReference();
+            next = fetchNext() ? relationshipCursor.relationshipReference() : RelationshipSelections.NO_ID;
         }
 
         if ( next == RelationshipSelections.NO_ID )
@@ -78,5 +77,11 @@ public final class RelationshipDenseSelectionIterator<R> extends RelationshipDen
         }
 
         return current;
+    }
+
+    @Override
+    public void close()
+    {
+        closeInternal();
     }
 }

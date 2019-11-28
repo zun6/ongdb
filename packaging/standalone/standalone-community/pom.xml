@@ -22,7 +22,7 @@
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <scm>
-        <connection>scm:git:git://github.com/graphfoundation/ongdb.git</connection>
+        <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
         <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
         <url>https://github.com/neo4j/neo4j</url>
     </scm>
@@ -35,8 +35,9 @@
         <license>
             <name>GNU Affero General Public License, Version 3 with the Commons Clause</name>
             <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
-            <comments>The software ("Software") developed and owned by Neo4j Sweden AB (referred to in this notice as "Neo4j") is
-                licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
+            <comments>
+                The software ("Software") developed and owned by Neo4j Sweden AB (referred to in this notice as "Neo4j") is
+                licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 with the Commons Clause to all
                 third parties and that license is included below.
 
                 However, if you have executed an End User Software License and Services
@@ -57,12 +58,12 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
                     <attach>false</attach>
-                    <finalName>ongdb-community-${project.version}</finalName>
+                    <finalName>neo4j-community-${project.version}</finalName>
                     <appendAssemblyId>true</appendAssemblyId>
                     <outputDirectory>${project.parent.build.directory}</outputDirectory>
                     <delimiters>
                         <!-- Because we are filtering shell scripts, which use '@' on windows and '${}' on *nix, change the
-                             parameter substitution pattern to not clash with those. -->
+                 parameter substitution pattern to not clash with those. -->
                         <delimiter>#{*}</delimiter>
                     </delimiters>
                 </configuration>
@@ -77,9 +78,6 @@
                             <descriptors>
                                 <descriptor>src/main/assemblies/community-unix-dist.xml</descriptor>
                             </descriptors>
-                            <filters>
-                                <filter>${project.parent.basedir}/tarball.properties</filter>
-                            </filters>
                         </configuration>
                     </execution>
                     <execution>
@@ -92,9 +90,6 @@
                             <descriptors>
                                 <descriptor>src/main/assemblies/community-windows-dist.xml</descriptor>
                             </descriptors>
-                            <filters>
-                                <filter>${project.parent.basedir}/zip.properties</filter>
-                            </filters>
                         </configuration>
                     </execution>
                 </executions>
@@ -134,15 +129,6 @@
             <artifactId>neo4j-server</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-expression-evaluator</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-push-to-cloud</artifactId>
-            <version>${project.version}</version>
-        </dependency>
     </dependencies>
+
 </project>

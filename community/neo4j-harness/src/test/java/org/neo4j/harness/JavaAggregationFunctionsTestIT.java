@@ -19,27 +19,28 @@
  */
 package org.neo4j.harness;
 
-import org.codehaus.jackson.JsonNode;
-import org.junit.Rule;
-import org.junit.Test;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.junit.jupiter.api.Test;
 
+import org.neo4j.harness.internal.InProcessNeo4j;
+import org.neo4j.harness.internal.Neo4jBuilder;
+import org.neo4j.harness.internal.TestNeo4jBuilders;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
-import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-public class JavaAggregationFunctionsTestIT
+@TestDirectoryExtension
+class JavaAggregationFunctionsTestIT
 {
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
-
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Inject
+    private TestDirectory testDir;
 
     public static class MyFunctions
     {
@@ -72,13 +73,13 @@ public class JavaAggregationFunctionsTestIT
     }
 
     @Test
-    public void shouldLaunchWithDeclaredFunctions() throws Exception
+    void shouldLaunchWithDeclaredFunctions() throws Exception
     {
         // When
-        try ( ServerControls server = createServer( MyFunctions.class ).newServer() )
+        try ( InProcessNeo4j server = createServer( MyFunctions.class ).build() )
         {
             // Then
-            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
+            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
                     quotedJson(
                             "{ 'statements': [ { 'statement': 'RETURN org.neo4j.harness.myFunc() AS someNumber' } ] " +
                             "}" ) );
@@ -90,28 +91,25 @@ public class JavaAggregationFunctionsTestIT
         }
     }
 
-    private TestServerBuilder createServer( Class<?> functionClass )
-    {
-        return TestServerBuilders.newInProcessBuilder()
-                                 .withAggregationFunction( functionClass );
-    }
-
     @Test
-    public void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
+    void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
     {
         // When
-        try ( ServerControls server = createServer( MyFunctions.class ).newServer() )
+        try ( InProcessNeo4j server = createServer( MyFunctions.class ).build() )
         {
             // Then
-            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
+            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
                     quotedJson(
                             "{ 'statements': [ { 'statement': 'RETURN org.neo4j.harness.funcThatThrows()' } ] }" ) );
 
             String error = response.get( "errors" ).get( 0 ).get( "message" ).asText();
-            assertEquals(
-                    "Failed to invoke function `org.neo4j.harness.funcThatThrows`: Caused by: java.lang" +
-                    ".RuntimeException: This is an exception",
+            assertEquals( "Failed to invoke function `org.neo4j.harness.funcThatThrows`: Caused by: java.lang.RuntimeException: This is an exception",
                     error );
         }
+    }
+
+    private static Neo4jBuilder createServer( Class<?> functionClass )
+    {
+        return TestNeo4jBuilders.newInProcessBuilder().withAggregationFunction( functionClass );
     }
 }

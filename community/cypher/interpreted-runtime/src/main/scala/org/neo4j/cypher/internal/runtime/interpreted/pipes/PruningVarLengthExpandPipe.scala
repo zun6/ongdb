@@ -20,17 +20,17 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_5.util.InternalException
-import org.neo4j.cypher.internal.v3_5.util.attribution.Id
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.exceptions.InternalException
 import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.{RelationshipValue, VirtualNodeValue}
 
 case class PruningVarLengthExpandPipe(source: Pipe,
                                       fromName: String,
                                       toName: String,
-                                      types: LazyTypes,
+                                      types: RelationshipTypes,
                                       dir: SemanticDirection,
                                       min: Int,
                                       max: Int,
@@ -267,7 +267,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     def next(): ExecutionContext = {
       val endNode =
         if (depth == -1) {
-          val fromValue = inputRow.getOrElse(fromName, error(s"Required variable `$fromName` is not in context"))
+          val fromValue = inputRow.getByName(fromName)
           fromValue match {
             case node: VirtualNodeValue =>
               push( node = node,
@@ -276,7 +276,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                 prevLocalRelIndex = -1,
                 prevNodeState = NodeState.NOOP )
 
-            case x: Value if x == Values.NO_VALUE =>
+            case x: Value if x eq Values.NO_VALUE =>
               null
 
             case _ =>
@@ -323,7 +323,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
   ) extends Iterator[ExecutionContext] {
 
     var outputRow:ExecutionContext = _
-    var fullPruneState:FullPruneState = new FullPruneState( queryState )
+    val fullPruneState:FullPruneState = new FullPruneState( queryState )
     var hasPrefetched = false
 
     override def hasNext: Boolean = {

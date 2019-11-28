@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_5.util.InternalException
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
-import org.neo4j.helpers.collection.PrefetchingIterator
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue, QueryContext}
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
+import org.neo4j.exceptions.ParameterWrongTypeException
+import org.neo4j.internal.helpers.collection.PrefetchingIterator
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -47,35 +46,39 @@ trait CachingExpandInto {
   /**
    * Finds all relationships connecting fromNode and toNode.
    */
-  protected def findRelationships(query: QueryContext, fromNode: NodeValue, toNode: NodeValue,
-                                relCache: RelationshipsCache, dir: SemanticDirection, relTypes: => Option[Array[Int]]): Iterator[RelationshipValue] = {
+  protected def findRelationships(state: QueryState,
+                                  fromNode: NodeValue,
+                                  toNode: NodeValue,
+                                  relCache: RelationshipsCache,
+                                  dir: SemanticDirection,
+                                  relTypes: => Array[Int]): Iterator[RelationshipValue] = {
 
-    val fromNodeIsDense = query.nodeIsDense(fromNode.id())
-    val toNodeIsDense = query.nodeIsDense(toNode.id())
+    val fromNodeIsDense = state.query.nodeIsDense(fromNode.id(), state.cursors.nodeCursor)
+    val toNodeIsDense = state.query.nodeIsDense(toNode.id(), state.cursors.nodeCursor)
 
     //if both nodes are dense, start from the one with the lesser degree
     if (fromNodeIsDense && toNodeIsDense) {
       //check degree and iterate from the node with smaller degree
-      val fromDegree = getDegree(fromNode, relTypes, dir, query)
+      val fromDegree = getDegree(fromNode, relTypes, dir, state)
       if (fromDegree == 0) {
         return Iterator.empty
       }
 
-      val toDegree = getDegree(toNode, relTypes, dir.reversed, query)
+      val toDegree = getDegree(toNode, relTypes, dir.reversed, state)
       if (toDegree == 0) {
         return Iterator.empty
       }
 
-      relIterator(query, fromNode, toNode, preserveDirection = fromDegree < toDegree, relTypes, relCache, dir)
+      relIterator(state.query, fromNode, toNode, preserveDirection = fromDegree < toDegree, relTypes, relCache, dir)
     }
     // iterate from a non-dense node
     else if (toNodeIsDense)
-      relIterator(query, fromNode, toNode, preserveDirection = true, relTypes, relCache, dir)
+      relIterator(state.query, fromNode, toNode, preserveDirection = true, relTypes, relCache, dir)
     else if (fromNodeIsDense)
-      relIterator(query, fromNode, toNode, preserveDirection = false, relTypes, relCache, dir)
+      relIterator(state.query, fromNode, toNode, preserveDirection = false, relTypes, relCache, dir)
     //both nodes are non-dense, choose a random starting point
     else
-      relIterator(query, fromNode, toNode, alternate(), relTypes, relCache, dir)
+      relIterator(state.query, fromNode, toNode, alternate(), relTypes, relCache, dir)
   }
 
   private var alternateState = false
@@ -87,7 +90,7 @@ trait CachingExpandInto {
   }
 
   private def relIterator(query: QueryContext, fromNode: NodeValue,  toNode: NodeValue, preserveDirection: Boolean,
-                          relTypes: Option[Array[Int]], relCache: RelationshipsCache, dir: SemanticDirection) = {
+                          relTypes: Array[Int], relCache: RelationshipsCache, dir: SemanticDirection) = {
     val (start, localDirection, end) = if(preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
     val relationships = query.getRelationshipsForIds(start.id(), localDirection, relTypes)
     new PrefetchingIterator[RelationshipValue] {
@@ -109,22 +112,22 @@ trait CachingExpandInto {
     }.asScala
   }
 
-  private def getDegree(node: NodeValue, relTypes: Option[Array[Int]], direction: SemanticDirection, query: QueryContext) = {
-    relTypes.map {
-      case rels if rels.isEmpty   => query.nodeGetDegree(node.id(), direction)
-      case rels if rels.length == 1 => query.nodeGetDegree(node.id(), direction, rels.head)
-      case rels                   => rels.foldLeft(0)(
-        (acc, rel)                => acc + query.nodeGetDegree(node.id(), direction, rel)
-      )
-    }.getOrElse(query.nodeGetDegree(node.id(), direction))
+  private def getDegree(node: NodeValue, relTypes: Array[Int], direction: SemanticDirection, state: QueryState) = {
+    if (relTypes == null) state.query.nodeGetDegree(node.id(), direction, state.cursors.nodeCursor)
+    else if (relTypes.length == 1) state.query.nodeGetDegree(node.id(), direction, relTypes(0), state.cursors.nodeCursor)
+    else {
+      relTypes.foldLeft(0)(
+        (acc, rel) => acc + state.query.nodeGetDegree(node.id(), direction, rel, state.cursors.nodeCursor)
+        )
+    }
   }
 
   @inline
   protected def getRowNode(row: ExecutionContext, col: String): AnyValue = {
-    row.getOrElse(col, throw new InternalException(s"Expected to find a node at '$col' but found nothing")) match {
+    row.getByName(col) match {
       case n: NodeValue => n
-      case NO_VALUE    => NO_VALUE
-      case value   => throw new InternalException(s"Expected to find a node at '$col' but found $value instead")
+      case IsNoValue() => NO_VALUE
+      case value => throw new ParameterWrongTypeException(s"Expected to find a node at '$col' but found $value instead")
     }
   }
 

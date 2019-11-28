@@ -21,11 +21,9 @@ package org.neo4j.server;
 
 import java.net.URI;
 
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.plugins.PluginManager;
-import org.neo4j.server.rest.management.AdvertisableService;
-import org.neo4j.server.rest.transactional.TransactionRegistry;
+import org.neo4j.configuration.Config;
+import org.neo4j.server.database.DatabaseService;
+import org.neo4j.server.http.cypher.TransactionRegistry;
 
 public interface NeoServer
 {
@@ -35,13 +33,9 @@ public interface NeoServer
 
     Config getConfig();
 
-    Database getDatabase();
+    DatabaseService getDatabaseService();
 
     TransactionRegistry getTransactionRegistry();
 
-    PluginManager getExtensionManager();
-
     URI baseUri();
-
-    Iterable<AdvertisableService> getServices();
 }

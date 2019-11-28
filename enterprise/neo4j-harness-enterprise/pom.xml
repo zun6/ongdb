@@ -23,6 +23,7 @@
         <license-text.header>headers/AGPL-3-header.txt</license-text.header>
         <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
         <moduleName>org.neo4j.harness.enterprise</moduleName>
+        <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>        
     </properties>
 
     <scm>
@@ -68,17 +69,10 @@
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-migrationsupport</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.vintage</groupId>
-            <artifactId>junit-vintage-engine</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
+            <artifactId>junit-jupiter</artifactId>
         </dependency>
 
         <dependency>

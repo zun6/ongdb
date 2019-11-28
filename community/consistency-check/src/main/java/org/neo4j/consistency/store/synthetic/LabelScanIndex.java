@@ -35,6 +35,12 @@ public class LabelScanIndex extends AbstractBaseRecord
     }
 
     @Override
+    public final AbstractBaseRecord clone() throws CloneNotSupportedException
+    {
+        throw new CloneNotSupportedException( "Synthetic records cannot be cloned." );
+    }
+
+    @Override
     public String toString()
     {
         return "Label index: " + fineName;

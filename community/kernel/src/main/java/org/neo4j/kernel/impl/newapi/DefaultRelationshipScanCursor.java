@@ -23,20 +23,25 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
 class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRelationshipScanCursor> implements RelationshipScanCursor
 {
     private int type;
     private long single;
     private LongIterator addedRelationships;
+    private CursorPool<DefaultRelationshipScanCursor> pool;
 
-    DefaultRelationshipScanCursor( DefaultCursors pool, StorageRelationshipScanCursor storeCursor )
+    DefaultRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool, StorageRelationshipScanCursor storeCursor )
     {
-        super( pool, storeCursor );
+        super( storeCursor );
+        this.pool = pool;
     }
 
     void scan( int type, Read read )
@@ -46,6 +51,19 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         this.single = NO_ID;
         init( read );
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
+    }
+
+    boolean scanBatch( Read read, AllRelationshipsScan scan, int sizeHint, LongIterator addedRelationships, boolean hasChanges )
+    {
+        this.read = read;
+        this.single = NO_ID;
+        this.type = -1;
+        this.currentAddedInTx = NO_ID;
+        this.addedRelationships = addedRelationships;
+        this.hasChanges = hasChanges;
+        this.checkHasChanges = false;
+        boolean scanBatch = storeCursor.scanBatch( scan, sizeHint );
+        return addedRelationships.hasNext() || scanBatch;
     }
 
     void single( long reference, Read read )
@@ -63,24 +81,50 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         // Check tx state
         boolean hasChanges = hasChanges();
 
-        if ( hasChanges && addedRelationships.hasNext() )
+        if ( hasChanges )
         {
-            read.txState().relationshipVisit( addedRelationships.next(), storeCursor );
-            return true;
+            if ( addedRelationships.hasNext() )
+            {
+                read.txState().relationshipVisit( addedRelationships.next(), relationshipTxStateDataVisitor );
+                getTracer().onRelationship( relationshipReference() );
+                return true;
+            }
+            else
+            {
+                currentAddedInTx = NO_ID;
+            }
         }
 
         while ( storeCursor.next() )
         {
-            if ( !hasChanges || !read.txState().relationshipIsDeletedInThisTx( storeCursor.entityReference() ) )
+            boolean skip = hasChanges && read.txState().relationshipIsDeletedInThisTx( storeCursor.entityReference() );
+            AccessMode mode = read.ktx.securityContext().mode();
+            if ( !skip && mode.allowsTraverseRelType( storeCursor.type() ) && allowedToSeeEndNode( mode ) )
             {
+                getTracer().onRelationship( relationshipReference() );
                 return true;
             }
         }
         return false;
     }
 
+    protected boolean allowedToSeeEndNode( AccessMode mode )
+    {
+        if ( mode.allowsTraverseAllLabels() )
+        {
+            return true;
+        }
+        try ( NodeCursor sourceNode = read.cursors().allocateNodeCursor();
+              NodeCursor targetNode = read.cursors().allocateNodeCursor() )
+        {
+            read.singleNode( storeCursor.sourceNodeReference(), sourceNode );
+            read.singleNode( storeCursor.targetNodeReference(), targetNode );
+            return sourceNode.next() && targetNode.next();
+        }
+    }
+
     @Override
-    public void close()
+    public void closeInternal()
     {
         if ( !isClosed() )
         {

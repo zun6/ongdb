@@ -55,23 +55,13 @@
       <excludes>
         <exclude>**/*.bat</exclude>
         <exclude>**/*.m4</exclude>
-        <exclude>**/neo4j-backup*</exclude>
         <exclude>**/*.psd1</exclude>
         <exclude>**/*.psm1</exclude>
         <exclude>**/*.ps1</exclude>
         <exclude>**/Neo4j-Management</exclude>
         <exclude>**/*.exe</exclude>
-        <exclude>**/2.x-config-migrator.jar</exclude>
       </excludes>
       <filtered>true</filtered>
-    </fileSet>
-    <!-- configuration migrator -->
-    <fileSet>
-      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
-      <outputDirectory/>
-      <includes>
-        <include>**/2.x-config-migrator.jar</include>
-      </includes>
     </fileSet>
     <!-- filter and chmod 755 cypher-shell -->
     <fileSet>
@@ -109,8 +99,6 @@
         <include>org.apache.lucene:lucene-codecs</include>
         <include>org.scala-lang:*</include>
         <include>org.parboiled:*</include>
-        <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
-        <include>net.sf.opencsv:opencsv</include>
         <include>org.apache.commons:commons-lang3</include>
       </includes>
       <excludes>
@@ -129,8 +117,6 @@
         <exclude>org.apache.lucene:*</exclude>
         <exclude>org.scala-lang:*</exclude>
         <exclude>org.parboiled:*</exclude>
-        <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
-        <exclude>net.sf.opencsv:opencsv</exclude>
         <exclude>org.apache.commons:commons-lang3</exclude>
         <exclude>org.ow2.asm:*</exclude>
       </excludes>

@@ -14,19 +14,19 @@
     <artifactId>packaging-build</artifactId>
     <version>4.0.0-SNAPSHOT</version>
 
-    <name>ONgDB - Packaging Build</name>
+    <name>Neo4j - Packaging Build</name>
     <packaging>pom</packaging>
-    <description>Project that builds ONgDB Packages.</description>
-    <url>http://components.graphfoundation.org/${project.artifactId}/${project.version}</url>
+    <description>Project that builds Neo4j Packages.</description>
+    <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <properties>
         <license-text.header>headers/AGPL-3-header.txt</license-text.header>
     </properties>
 
     <scm>
-        <connection>scm:git:git://github.com/graphfoundation/ongdb.git</connection>
-        <developerConnection>scm:git:git@github.com:graphfoundation/ongdb.git</developerConnection>
-        <url>https://github.com/graphfoundation/ongdb</url>
+        <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+        <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+        <url>https://github.com/neo4j/neo4j</url>
     </scm>
 
     <modules>
@@ -35,10 +35,11 @@
 
     <licenses>
         <license>
-            <name>GNU Affero General Public License, Version 3</name>
+            <name>GNU Affero General Public License, Version 3 with the Commons Clause</name>
             <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
-            <comments>The software ("Software") developed and owned by Neo4j Sweden AB (referred to in this notice as "Neo4j") is
-                licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
+            <comments>
+                The software ("Software") developed and owned by Neo4j Sweden AB (referred to in this notice as "Neo4j") is
+                licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 with the Commons Clause to all
                 third parties and that license is included below.
 
                 However, if you have executed an End User Software License and Services

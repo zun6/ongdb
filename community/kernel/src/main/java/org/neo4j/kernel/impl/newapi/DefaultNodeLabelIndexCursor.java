@@ -26,16 +26,15 @@ import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
-import org.neo4j.kernel.impl.index.labelscan.LabelScanValueIndexProgressor;
-import org.neo4j.storageengine.api.schema.IndexProgressor;
-import org.neo4j.storageengine.api.schema.IndexProgressor.NodeLabelClient;
+import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.IndexProgressor.NodeLabelClient;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
 class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
-        implements NodeLabelIndexCursor, NodeLabelClient
+        implements NodeLabelIndexCursor
 {
     private Read read;
     private long node;
@@ -43,16 +42,15 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
     private LongIterator added;
     private LongSet removed;
 
-    private final DefaultCursors pool;
+    private final CursorPool<DefaultNodeLabelIndexCursor> pool;
 
-    DefaultNodeLabelIndexCursor( DefaultCursors pool )
+    DefaultNodeLabelIndexCursor( CursorPool<DefaultNodeLabelIndexCursor> pool )
     {
         this.pool = pool;
-        node = NO_ID;
+        this.node = NO_ID;
     }
 
-    @Override
-    public void scan( IndexProgressor progressor, boolean providesLabels, int label )
+    public void scan( IndexProgressor progressor, int label )
     {
         super.initialize( progressor );
         if ( read.hasTxStateWithChanges() )
@@ -61,44 +59,32 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
             added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
             removed = mergeToSet( read.txState().addedAndRemovedNodes().getRemoved(), changes.getRemoved() );
         }
+        getTracer().onLabelScan( label );
     }
 
-    @Override
-    public void unionScan( IndexProgressor progressor, boolean providesLabels, int... labels )
+    public void scan( IndexProgressor progressor, LongIterator added, LongSet removed )
     {
-        //TODO: Currently we don't have a good way of handling this in the tx state
-        //The problem is this case:
-        //Given a node with label :A
-        //we remove label A in a transaction and follow that by
-        //a scan of `:A and :B`. In order to figure this out we need
-        //to check both tx state and disk, which we currently don't.
-        throw new UnsupportedOperationException(  );
+        super.initialize( progressor );
+        this.added = added;
+        this.removed = removed;
     }
 
-    @Override
-    public void intersectionScan( IndexProgressor progressor, boolean providesLabels, int... labels )
+    public NodeLabelClient nodeLabelClient()
     {
-        //TODO: Currently we don't have a good way of handling this in the tx state
-        //The problem is for the nodes where some - but not all of the labels - are
-        //added in the transaction. For these we need to go to disk and check if they
-        //have the missing labels and hence return them or if not discard them.
-        throw new UnsupportedOperationException(  );
-    }
-
-    @Override
-    public boolean acceptNode( long reference, LabelSet labels )
-    {
-        if ( isRemoved( reference ) )
+        return ( reference, labels ) ->
         {
-            return false;
-        }
-        else
-        {
-            this.node = reference;
-            this.labels = labels;
+            if ( isRemoved( reference ) )
+            {
+                return false;
+            }
+            else
+            {
+                DefaultNodeLabelIndexCursor.this.node = reference;
+                DefaultNodeLabelIndexCursor.this.labels = labels;
 
-            return true;
-        }
+                return true;
+            }
+        };
     }
 
     @Override
@@ -107,11 +93,17 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
         if ( added != null && added.hasNext() )
         {
             this.node = added.next();
+            getTracer().onNode( this.node );
             return true;
         }
         else
         {
-            return innerNext();
+            boolean hasNext = innerNext();
+            if ( hasNext )
+            {
+                getTracer().onNode( this.node );
+            }
+            return hasNext;
         }
     }
 
@@ -133,17 +125,23 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     @Override
+    public float score()
+    {
+        return Float.NaN;
+    }
+
+    @Override
     public LabelSet labels()
     {
         return labels;
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
         if ( !isClosed() )
         {
-            super.close();
+            closeProgressor();
             node = NO_ID;
             labels = null;
             read = null;
@@ -156,7 +154,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
     @Override
     public boolean isClosed()
     {
-        return super.isClosed();
+        return isProgressorClosed();
     }
 
     @Override

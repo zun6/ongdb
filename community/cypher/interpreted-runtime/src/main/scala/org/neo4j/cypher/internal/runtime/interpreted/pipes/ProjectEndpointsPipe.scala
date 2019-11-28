@@ -19,18 +19,19 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ListSupport}
-import org.neo4j.cypher.internal.v3_5.util.attribution.Id
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, ListSupport, QueryContext}
+import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipReference, RelationshipValue}
 
 case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                 start: String, startInScope: Boolean,
                                 end: String, endInScope: Boolean,
-                                relTypes: Option[LazyTypes], directed: Boolean, simpleLength: Boolean)
+                                relTypes: RelationshipTypes,
+                                directed: Boolean,
+                                simpleLength: Boolean)
                                (val id: Id = Id.INVALID_ID) extends PipeWithSource(source)
   with ListSupport  {
-  type Projector = (ExecutionContext) => Iterator[ExecutionContext]
+  type Projector = ExecutionContext => Iterator[ExecutionContext]
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
     input.flatMap(projector(state.query))
@@ -77,18 +78,21 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   private def findSimpleLengthRelEndpoints(context: ExecutionContext,
                                            qtx: QueryContext
                                           ): Option[StartAndEnd] = {
-      val relValue = context(relName) match {
+      val relValue = context.getByName(relName) match {
         case relValue: RelationshipValue => relValue
         case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
       }
-      val rel = Some(relValue).filter(hasAllowedType)
-    rel.flatMap( rel => pickStartAndEnd(rel, rel, context, qtx) )
+      if (!isAllowedType(qtx.relationshipType(relValue.`type`().stringValue()), qtx )) {
+        None
+      } else {
+        pickStartAndEnd(relValue, relValue, context, qtx)
+      }
   }
 
   private def findVarLengthRelEndpoints(context: ExecutionContext,
                                         qtx: QueryContext
                                        ): Option[(StartAndEnd, ListValue)] = {
-    val rels = makeTraversable(context(relName))
+    val rels = makeTraversable(context.getByName(relName))
     if (rels.nonEmpty && allHasAllowedType(rels, qtx)) {
       val firstRel = rels.head match {
         case relValue: RelationshipValue => relValue
@@ -111,13 +115,15 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
         case relValue: RelationshipValue => relValue
         case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
       }
-      if (!hasAllowedType(next)) return false
+      if (!isAllowedType(qtx.relationshipType(next.`type`().stringValue()), qtx)) return false
     }
     true
   }
 
-  private def hasAllowedType(rel: RelationshipValue): Boolean =
-    relTypes.forall(_.names.contains(rel.`type`().stringValue()))
+  private def isAllowedType(rel: Int, qtx: QueryContext): Boolean = {
+    val types = relTypes.types(qtx)
+    types == null || types.contains(rel)
+  }
 
   private def pickStartAndEnd(relStart: RelationshipValue, relEnd: RelationshipValue,
                               context: ExecutionContext, qtx: QueryContext): Option[StartAndEnd] = {
@@ -125,9 +131,9 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     val e = relEnd.endNode()
 
     if (!startInScope && !endInScope) Some(NotInScope(s, e))
-    else if ((!startInScope || context(start) == s) && (!endInScope || context(end) == e))
+    else if ((!startInScope || context.getByName(start) == s) && (!endInScope || context.getByName(end) == e))
       Some(InScope(s, e))
-    else if (!directed && (!startInScope || context(start) == e ) && (!endInScope || context(end) == s))
+    else if (!directed && (!startInScope || context.getByName(start) == e ) && (!endInScope || context.getByName(end) == s))
       Some(InScopeReversed(s, e))
     else None
   }

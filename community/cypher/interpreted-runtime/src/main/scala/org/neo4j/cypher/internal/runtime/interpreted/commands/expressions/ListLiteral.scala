@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
@@ -37,9 +37,7 @@ case class ListLiteral(override val arguments: Expression*) extends Expression {
     VirtualValues.list(argumentValues: _*)
   }
 
-  def rewrite(f: (Expression) => Expression): Expression = f(ListLiteral(arguments.map(f): _*))
+  def rewrite(f: Expression => Expression): Expression = f(ListLiteral(arguments.map(f): _*))
 
   override def children: Seq[AstNode[_]] = arguments
-
-  override def symbolTableDependencies: Set[String] = arguments.flatMap(_.symbolTableDependencies).toSet
 }

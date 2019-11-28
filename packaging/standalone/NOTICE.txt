@@ -39,6 +39,7 @@ Apache Software License, Version 2.0
   @firebase/util
   @firebase/webchannel-wrapper
   Apache Commons Lang
+  Apache Commons Text
   ascli
   aws-sign2
   bytebuffer
@@ -56,6 +57,7 @@ Apache Software License, Version 2.0
   neo4j-driver
   Netty/All-in-One
   oauth-sign
+  picocli - a mighty tiny Command Line Interface
   protobufjs
   request
   rxjs
@@ -96,6 +98,9 @@ Eclipse Distribution License - v 1.0
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
+
+GNU Lesser General Public License, Version 2.1
+  Java Native Access
 
 ISC
   abbrev

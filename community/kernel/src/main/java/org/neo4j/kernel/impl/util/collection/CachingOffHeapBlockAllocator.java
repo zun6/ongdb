@@ -24,13 +24,13 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.memory.MemoryAllocationTracker;
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 import org.neo4j.util.VisibleForTesting;
 
-import static org.neo4j.helpers.Numbers.isPowerOfTwo;
-import static org.neo4j.helpers.Numbers.log2floor;
+import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
+import static org.neo4j.internal.helpers.Numbers.log2floor;
 import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.util.Preconditions.requirePositive;
 import static org.neo4j.util.Preconditions.requirePowerOfTwo;

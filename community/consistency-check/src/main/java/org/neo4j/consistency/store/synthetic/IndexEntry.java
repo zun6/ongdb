@@ -19,9 +19,9 @@
  */
 package org.neo4j.consistency.store.synthetic;
 
-import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.common.TokenNameLookup;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 import static java.lang.String.format;
 
@@ -31,10 +31,10 @@ import static java.lang.String.format;
  */
 public class IndexEntry extends AbstractBaseRecord
 {
-    private final StoreIndexDescriptor indexDescriptor;
+    private final IndexDescriptor indexDescriptor;
     private final TokenNameLookup tokenNameLookup;
 
-    public IndexEntry( StoreIndexDescriptor indexDescriptor, TokenNameLookup tokenNameLookup, long nodeId )
+    public IndexEntry( IndexDescriptor indexDescriptor, TokenNameLookup tokenNameLookup, long nodeId )
     {
         super( nodeId );
         this.indexDescriptor = indexDescriptor;
@@ -49,8 +49,14 @@ public class IndexEntry extends AbstractBaseRecord
     }
 
     @Override
+    public final AbstractBaseRecord clone() throws CloneNotSupportedException
+    {
+        throw new CloneNotSupportedException( "Synthetic records cannot be cloned." );
+    }
+
+    @Override
     public String toString()
     {
-        return format( "IndexEntry[nodeId=%d, index=%s]", getId(), indexDescriptor.toString( tokenNameLookup ) );
+        return format( "IndexEntry[nodeId=%d, index=%s]", getId(), indexDescriptor.userDescription( tokenNameLookup ) );
     }
 }

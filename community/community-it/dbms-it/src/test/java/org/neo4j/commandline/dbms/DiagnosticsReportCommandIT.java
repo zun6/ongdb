@@ -19,10 +19,13 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import picocli.CommandLine;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,44 +37,47 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 
-import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.RealOutsideWorld;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.ExecutionContext;
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-public class DiagnosticsReportCommandIT
+@TestDirectoryExtension
+@ExtendWith( SuppressOutputExtension.class )
+@ResourceLock( Resources.SYSTEM_OUT )
+class DiagnosticsReportCommandIT
 {
-    @Rule
-    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
 
-    private GraphDatabaseService database;
+    private DatabaseManagementService managementService;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
-        database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
-                .newGraphDatabase();
+        managementService = new DatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
+        managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
-        database.shutdown();
+        managementService.shutdown();
     }
 
     @Test
-    public void shouldBeAbleToAttachToPidAndRunThreadDump() throws IOException, CommandFailed, IncorrectUsage
+    void shouldBeAbleToAttachToPidAndRunThreadDump() throws IOException
     {
         long pid = getPID();
         assertThat( pid, is( not( 0 ) ) );
@@ -84,15 +90,16 @@ public class DiagnosticsReportCommandIT
         Files.write( Paths.get( run.getAbsolutePath(), "neo4j.pid" ), String.valueOf( pid ).getBytes() );
 
         // Run command, should detect running instance
-        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
+        try
         {
             String[] args = {"threads", "--to=" + testDirectory.absolutePath().getAbsolutePath() + "/reports"};
-            Path homeDir = testDirectory.directory().toPath();
-            DiagnosticsReportCommand diagnosticsReportCommand =
-                    new DiagnosticsReportCommand( homeDir, homeDir, outsideWorld );
-            diagnosticsReportCommand.execute( args );
+            Path homeDir = testDirectory.homeDir().toPath();
+            var ctx = new ExecutionContext( homeDir, homeDir, System.out, System.err, testDirectory.getFileSystem() );
+            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
+            CommandLine.populateCommand( diagnosticsReportCommand, args );
+            diagnosticsReportCommand.execute();
         }
-        catch ( IncorrectUsage e )
+        catch ( CommandFailedException e )
         {
             if ( e.getMessage().equals( "Unknown classifier: threads" ) )
             {

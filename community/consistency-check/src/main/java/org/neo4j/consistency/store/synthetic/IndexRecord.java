@@ -19,14 +19,14 @@
  */
 package org.neo4j.consistency.store.synthetic;
 
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 public class IndexRecord extends AbstractBaseRecord
 {
-    private final StoreIndexDescriptor indexRule;
+    private final IndexDescriptor indexRule;
 
-    public IndexRecord( StoreIndexDescriptor indexRule )
+    public IndexRecord( IndexDescriptor indexRule )
     {
         super( indexRule.getId() );
         this.indexRule = indexRule;
@@ -36,6 +36,12 @@ public class IndexRecord extends AbstractBaseRecord
     public void clear()
     {
         initialize( false );
+    }
+
+    @Override
+    public final AbstractBaseRecord clone() throws CloneNotSupportedException
+    {
+        throw new CloneNotSupportedException( "Synthetic records cannot be cloned." );
     }
 
     @Override

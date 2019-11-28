@@ -26,4 +26,6 @@ package org.neo4j.internal.kernel.api;
 public interface Cursor extends AutoCloseablePlus
 {
     boolean next();
+
+    void setTracer( KernelReadTracer tracer );
 }

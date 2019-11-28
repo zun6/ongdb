@@ -24,7 +24,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -32,9 +31,6 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
-
-import java.util.Collection;
-import java.util.Iterator;
 
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -60,7 +56,7 @@ public class LuceneFulltextDocumentStructure
         return doc;
     }
 
-    public static Document documentRepresentingProperties( long id, Collection<String> propertyNames, Value[] values )
+    public static Document documentRepresentingProperties( long id, String[] propertyNames, Value[] values )
     {
         DocWithId document = reuseDocument( id );
         document.setValues( propertyNames, values );
@@ -133,7 +129,7 @@ public class LuceneFulltextDocumentStructure
             idValueField.setLongValue( id );
         }
 
-        private void setValues( Collection<String> names, Value[] values )
+        private void setValues( String[] names, Value[] values )
         {
             int i = 0;
             for ( String name : names )
@@ -149,16 +145,9 @@ public class LuceneFulltextDocumentStructure
 
         private void removeAllValueFields()
         {
-            Iterator<IndexableField> it = document.getFields().iterator();
-            while ( it.hasNext() )
-            {
-                IndexableField field = it.next();
-                String fieldName = field.name();
-                if ( !fieldName.equals( FIELD_ENTITY_ID ) )
-                {
-                    it.remove();
-                }
-            }
+            document.clear();
+            document.add( idField );
+            document.add( idValueField );
         }
     }
 }

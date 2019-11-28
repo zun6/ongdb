@@ -21,111 +21,58 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.UncheckedIOException;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
-import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
-import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.core.TokenHolder;
-import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
+import org.neo4j.common.TokenNameLookup;
+import org.neo4j.graphdb.schema.AnalyzerProvider;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.service.Services;
+import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.TextValue;
 
-public class FulltextIndexSettings
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT;
+
+final class FulltextIndexSettings
 {
-    public static final String INDEX_CONFIG_ANALYZER = "analyzer";
-    public static final String INDEX_CONFIG_EVENTUALLY_CONSISTENT = "eventually_consistent";
-    private static final String INDEX_CONFIG_FILE = "fulltext-index.properties";
-    private static final String INDEX_CONFIG_PROPERTY_NAMES = "propertyNames";
+    private FulltextIndexSettings()
+    {}
 
-    static FulltextIndexDescriptor readOrInitialiseDescriptor( StoreIndexDescriptor descriptor, String defaultAnalyzerName,
-            TokenHolder propertyKeyTokenHolder, File indexFolder, FileSystemAbstraction fileSystem )
+    static Analyzer createAnalyzer( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
     {
-        Properties indexConfiguration = new Properties();
-        if ( descriptor.schema() instanceof FulltextSchemaDescriptor )
+        TextValue analyzerName = descriptor.getIndexConfig().get( ANALYZER );
+        if ( analyzerName == null )
         {
-            FulltextSchemaDescriptor schema = (FulltextSchemaDescriptor) descriptor.schema();
-            indexConfiguration.putAll( schema.getIndexConfiguration() );
+            throw new RuntimeException( "Index has no analyzer configured: " + descriptor.userDescription( tokenNameLookup ) );
         }
-        loadPersistedSettings( indexConfiguration, indexFolder, fileSystem );
-        boolean eventuallyConsistent = Boolean.parseBoolean( indexConfiguration.getProperty( INDEX_CONFIG_EVENTUALLY_CONSISTENT ) );
-        String analyzerName = indexConfiguration.getProperty( INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
-        Analyzer analyzer = createAnalyzer( analyzerName );
-        List<String> names = new ArrayList<>();
-        for ( int propertyKeyId : descriptor.schema().getPropertyIds() )
-        {
-            try
-            {
-                names.add( propertyKeyTokenHolder.getTokenById( propertyKeyId ).name() );
-            }
-            catch ( TokenNotFoundException e )
-            {
-                throw new IllegalStateException( "Property key id not found.",
-                        new PropertyKeyIdNotFoundKernelException( propertyKeyId, e ) );
-            }
-        }
-        List<String> propertyNames = Collections.unmodifiableList( names );
-        return new FulltextIndexDescriptor( descriptor, propertyNames, analyzer, analyzerName, eventuallyConsistent );
-    }
-
-    private static void loadPersistedSettings( Properties settings, File indexFolder, FileSystemAbstraction fs )
-    {
-        File settingsFile = new File( indexFolder, INDEX_CONFIG_FILE );
-        if ( fs.fileExists( settingsFile ) )
-        {
-            try ( Reader reader = fs.openAsReader( settingsFile, StandardCharsets.UTF_8 ) )
-            {
-                settings.load( reader );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( "Failed to read persisted fulltext index properties: " + settingsFile, e );
-            }
-        }
-    }
-
-    private static Analyzer createAnalyzer( String analyzerName )
-    {
+        Analyzer analyzer;
         try
         {
-            AnalyzerProvider provider = AnalyzerProvider.getProviderByName( analyzerName );
-            return provider.createAnalyzer();
+            AnalyzerProvider analyzerProvider = Services.loadOrFail( AnalyzerProvider.class, analyzerName.stringValue() );
+            analyzer = analyzerProvider.createAnalyzer();
         }
         catch ( Exception e )
         {
             throw new RuntimeException( "Could not create fulltext analyzer: " + analyzerName, e );
         }
+        Objects.requireNonNull( analyzer, "The '" + analyzerName + "' analyzer provider returned a null analyzer." );
+        return analyzer;
     }
 
-    static void saveFulltextIndexSettings( FulltextIndexDescriptor descriptor, File indexFolder, FileSystemAbstraction fs )
-            throws IOException
+    static String[] createPropertyNames( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
     {
-        File indexConfigFile = new File( indexFolder, INDEX_CONFIG_FILE );
-        Properties settings = new Properties();
-        settings.setProperty( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Boolean.toString( descriptor.isEventuallyConsistent() ) );
-        settings.setProperty( INDEX_CONFIG_ANALYZER, descriptor.analyzerName() );
-        settings.setProperty( INDEX_CONFIG_PROPERTY_NAMES, descriptor.propertyNames().stream().collect( Collectors.joining( ", ", "[", "]" )) );
-        settings.setProperty( "_propertyIds", Arrays.toString( descriptor.properties() ) );
-        settings.setProperty( "_name", descriptor.name() );
-        settings.setProperty( "_schema_entityType", descriptor.schema().entityType().name() );
-        settings.setProperty( "_schema_entityTokenIds", Arrays.toString( descriptor.schema().getEntityTokenIds() ) );
-        try ( StoreChannel channel = fs.create( indexConfigFile );
-                Writer writer = fs.openAsWriter( indexConfigFile, StandardCharsets.UTF_8, false ) )
+        int[] propertyIds = descriptor.schema().getPropertyIds();
+        String[] propertyNames = new String[propertyIds.length];
+        for ( int i = 0; i < propertyIds.length; i++ )
         {
-            settings.store( writer, "Auto-generated file. Do not modify!" );
-            writer.flush();
-            channel.force( true );
+            propertyNames[i] = tokenNameLookup.propertyKeyGetName( propertyIds[i] );
         }
+        return propertyNames;
+    }
+
+    static boolean isEventuallyConsistent( IndexDescriptor index )
+    {
+        BooleanValue eventuallyConsistent = index.getIndexConfig().getOrDefault( EVENTUALLY_CONSISTENT, BooleanValue.FALSE );
+        return eventuallyConsistent.booleanValue();
     }
 }

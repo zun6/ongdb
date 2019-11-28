@@ -25,14 +25,13 @@
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <scm>
-        <connection>scm:git:git://github.com/graphfoundation/ongdb.git</connection>
+        <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
         <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
         <url>https://github.com/neo4j/neo4j</url>
     </scm>
 
     <modules>
         <module>standalone-community</module>
-        <module>standalone-enterprise</module>
     </modules>
 
     <properties>
@@ -43,13 +42,7 @@
         <!-- conf/neo4j.conf filter properties -->
         <default.http.port>7474</default.http.port>
         <default.https.port>7473</default.https.port>
-        <org.neo4j.webservice.packages>org.neo4j.rest.web</org.neo4j.webservice.packages>
 
-        <!-- Runtime properties. These are used to bootstrap the server. All other configuration should happen through a configuration file. Each of these should have a sensible default, so that the server can operate without them defined. -->
-        <neo4j.home>${project.build.directory}/neo4j</neo4j.home>
-        <neo4j.confdir>${neo4j.home}/conf</neo4j.confdir> <!-- needed? -->
-        <neo4j.datadir>${neo4j.home}/data</neo4j.datadir> <!-- needed? -->
-        <neo4j.logdir>${neo4j.datadir}/log</neo4j.logdir> <!-- needed? -->
         <skip.shell.tests>false</skip.shell.tests>
     </properties>
 
@@ -57,8 +50,9 @@
         <license>
             <name>GNU Affero General Public License, Version 3 with the Commons Clause</name>
             <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
-            <comments>The software ("Software") developed and owned by Neo4j Sweden AB (referred to in this notice as "Neo4j") is
-                licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
+            <comments>
+                The software ("Software") developed and owned by Neo4j Sweden AB (referred to in this notice as "Neo4j") is
+                licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 with the Commons Clause to all
                 third parties and that license is included below.
 
                 However, if you have executed an End User Software License and Services
@@ -99,7 +93,7 @@
                 <artifactId>licensing-maven-plugin</artifactId>
                 <configuration>
                     <prependText>licensing/notice-agpl-prefix.txt</prependText>
-                    <excludedGroups>^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$</excludedGroups>
+                    <excludedGroups>^((org.neo4j){1}|(org.neo4j.community){1}|(org.neo4j.app){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$</excludedGroups>
                 </configuration>
                 <executions>
                     <execution>
