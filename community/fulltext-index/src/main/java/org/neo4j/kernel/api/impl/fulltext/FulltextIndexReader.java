@@ -40,6 +40,14 @@ public abstract class FulltextIndexReader implements IndexReader
      */
     public abstract ScoreEntityIterator query( String query ) throws ParseException;
 
+    /**
+     * Queires the fulltext index with the given lucene-syntax query
+     *
+     * @param query the lucene query
+     * @return A {@link ScoreEntityIterator} over the results
+     */
+    public abstract ScoreEntityIterator query( String query, String sortField ) throws ParseException;
+
     @Override
     public IndexSampler createSampler()
     {

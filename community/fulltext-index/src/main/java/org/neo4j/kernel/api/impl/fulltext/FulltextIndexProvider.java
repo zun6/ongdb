@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.queryparser.classic.ParseException;
 
 import java.io.IOException;
@@ -29,6 +30,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -336,6 +339,27 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
             fulltextIndexReader = (FulltextIndexReader) indexReader;
         }
         return fulltextIndexReader.query( queryString );
+    }
+
+    @Override
+    public ScoreEntityIterator querySort( KernelTransaction ktx, String indexName, String queryString, String sortFieldString )
+            throws IOException, IndexNotFoundKernelException, ParseException
+    {
+        KernelTransactionImplementation kti = (KernelTransactionImplementation) ktx;
+        AllStoreHolder allStoreHolder = (AllStoreHolder) kti.dataRead();
+        IndexReference indexReference = kti.schemaRead().indexGetForName( indexName );
+        FulltextIndexReader fulltextIndexReader;
+        if ( kti.hasTxStateWithChanges() && !isEventuallyConsistent( indexReference ) )
+        {
+            FulltextAuxiliaryTransactionState auxiliaryTxState = (FulltextAuxiliaryTransactionState) allStoreHolder.auxiliaryTxState( TX_STATE_PROVIDER_KEY );
+            fulltextIndexReader = auxiliaryTxState.indexReader( indexReference, kti );
+        }
+        else
+        {
+            IndexReader indexReader = allStoreHolder.indexReader( indexReference, false );
+            fulltextIndexReader = (FulltextIndexReader) indexReader;
+        }
+        return fulltextIndexReader.query( queryString, sortFieldString );
     }
 
     private boolean isEventuallyConsistent( IndexReference indexReference )

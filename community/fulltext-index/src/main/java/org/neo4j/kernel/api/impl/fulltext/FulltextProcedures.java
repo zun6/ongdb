@@ -194,18 +194,26 @@ public class FulltextProcedures
             throw new IllegalArgumentException( "The '" + name + "' index (" + indexReference + ") is an index on " + entityType +
                     ", so it cannot be queried for nodes." );
         }
-        ScoreEntityIterator resultIterator = accessor.query( tx, name, query );
+
 
         if ( sortProperty.isEmpty() )
         {
+            ScoreEntityIterator resultIterator = accessor.query( tx, name, query );
+            return resultIterator.stream().map( result -> NodeOutput.forExistingEntityOrNull( db, result ) ).filter( Objects::nonNull );
+        }
+        else
+        {
+            ScoreEntityIterator resultIterator = accessor.querySort( tx, name, query, sortProperty );
+            System.currentTimeMillis();
+            System.currentTimeMillis();
             return resultIterator.stream().map( result -> NodeOutput.forExistingEntityOrNull( db, result ) ).filter( Objects::nonNull );
         }
 
-        if ( !sortDirection.equalsIgnoreCase( "ASC" ) && !sortDirection.equalsIgnoreCase( "DESC" ) )
-        {
-            throw new IllegalArgumentException( "The sortDirection '" + sortDirection + "' is invalid. Valid values are 'ASC' or 'DESC'." );
-        }
-        return sortNodes( resultIterator, sortProperty, sortDirection );
+//        if ( !sortDirection.equalsIgnoreCase( "ASC" ) && !sortDirection.equalsIgnoreCase( "DESC" ) )
+//        {
+//            throw new IllegalArgumentException( "The sortDirection '" + sortDirection + "' is invalid. Valid values are 'ASC' or 'DESC'." );
+//        }
+//        return null;//sortNodes( resultIterator, sortProperty, sortDirection );
     }
 
     @Description( "Query the given fulltext index. Returns the matching relationships and their lucene query score, ordered by score." )
