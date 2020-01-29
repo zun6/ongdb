@@ -21,23 +21,12 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.queryparser.classic.ParseException;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Spliterator;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
@@ -58,6 +47,20 @@ import org.neo4j.procedure.Procedure;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.util.FeatureToggles;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Spliterator;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_ANALYZER;
@@ -179,7 +182,8 @@ public class FulltextProcedures
 
     @Description( "Query the given fulltext index. Returns the matching nodes and their lucene query score, ordered by score." )
     @Procedure( name = "db.index.fulltext.queryNodes", mode = READ )
-    public Stream<NodeOutput> queryFulltextForNodes( @Name( "indexName" ) String name, @Name( "queryString" ) String query )
+    public Stream<NodeOutput> queryFulltextForNodes( @Name( "indexName" ) String name, @Name( "queryString" ) String query,
+            @Name( value = "sortProperty", defaultValue = "") String sortProperty, @Name( value = "sortDirection", defaultValue = "ASC") String sortDirection )
             throws ParseException, IndexNotFoundKernelException, IOException
     {
         IndexReference indexReference = getValidIndexReference( name );
@@ -191,9 +195,17 @@ public class FulltextProcedures
                     ", so it cannot be queried for nodes." );
         }
         ScoreEntityIterator resultIterator = accessor.query( tx, name, query );
-        return resultIterator.stream()
-                .map( result -> NodeOutput.forExistingEntityOrNull( db, result ) )
-                .filter( Objects::nonNull );
+
+        if ( sortProperty.isEmpty() )
+        {
+            return resultIterator.stream().map( result -> NodeOutput.forExistingEntityOrNull( db, result ) ).filter( Objects::nonNull );
+        }
+
+        if ( !sortDirection.equalsIgnoreCase( "ASC" ) && !sortDirection.equalsIgnoreCase( "DESC" ) )
+        {
+            throw new IllegalArgumentException( "The sortDirection '" + sortDirection + "' is invalid. Valid values are 'ASC' or 'DESC'." );
+        }
+        return sortNodes( resultIterator, sortProperty, sortDirection );
     }
 
     @Description( "Query the given fulltext index. Returns the matching relationships and their lucene query score, ordered by score." )
@@ -301,5 +313,38 @@ public class FulltextProcedures
             this.analyzer = name;
             this.description = description;
         }
+    }
+
+    /**
+     * Leverage ORDER BY to sort search results.
+     */
+    private Stream<NodeOutput> sortNodes( ScoreEntityIterator resultIterator, String sortProperty, String sortDirection )
+    {
+        List<NodeOutput> orderedList = new ArrayList<>();
+
+        List<Long> idList = new ArrayList<>();
+        Map<Long,Float> idScoreMap = new HashMap<>();
+
+        while ( resultIterator.hasNext() )
+        {
+            ScoreEntityIterator.ScoreEntry next = resultIterator.next();
+            Long entityId = next.entityId();
+            idList.add( entityId );
+            idScoreMap.put( entityId, next.score() );
+        }
+
+        // Leverage neo4j to sort our nodes
+        Result sortResult = db.execute(
+                " UNWIND $nodeIds AS nodeId MATCH (n) WHERE id(n)=nodeId RETURN n AS orderedNode ORDER BY n.`" + sortProperty + "` " + sortDirection,
+                Collections.singletonMap( "nodeIds", idList ) );
+
+        while ( sortResult.hasNext() )
+        {
+            Map<String,Object> next = sortResult.next();
+            Node orderedNode = (Node) next.get( "orderedNode" );
+            orderedList.add( new NodeOutput( orderedNode, idScoreMap.get( orderedNode.getId() ) ) );
+        }
+
+        return orderedList.stream();
     }
 }
