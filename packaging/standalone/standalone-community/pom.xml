@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.neo4j.assembly</groupId>
+    <groupId>org.graphfoundation.ongdb.assembly</groupId>
     <artifactId>neo4j-standalone</artifactId>
     <version>3.5.15-SNAPSHOT</version>
     <relativePath>..</relativePath>
@@ -128,7 +128,7 @@ terms of the relevant Commercial Agreement.
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.neo4j.app</groupId>
+      <groupId>org.graphfoundation.ongdb.app</groupId>
       <artifactId>neo4j-server</artifactId>
       <version>${project.version}</version>
     </dependency>
