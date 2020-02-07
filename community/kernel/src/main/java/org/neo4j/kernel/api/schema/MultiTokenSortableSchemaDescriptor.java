@@ -10,4 +10,15 @@ public class MultiTokenSortableSchemaDescriptor extends MultiTokenSchemaDescript
     {
         super( entityTokens, entityType, propertyIds );
     }
+
+    public MultiTokenSortableSchemaDescriptor( int[] entityTokens, EntityType entityType, int[] propertyIds, int[] sortIds )
+    {
+        super( entityTokens, entityType, propertyIds );
+        this.sortIds = sortIds;
+    }
+
+    public int[] getSortIds()
+    {
+        return sortIds;
+    }
 }

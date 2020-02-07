@@ -77,7 +77,29 @@ public class FulltextIndexSettings
             }
         }
         List<String> propertyNames = Collections.unmodifiableList( names );
-        return new FulltextIndexDescriptor( descriptor, propertyNames, analyzer, analyzerName, eventuallyConsistent );
+
+
+        List<String> sortNames = new ArrayList<>();
+        if ( descriptor.schema() instanceof FulltextSchemaDescriptor )
+        {
+            FulltextSchemaDescriptor schema = (FulltextSchemaDescriptor) descriptor.schema();
+            indexConfiguration.putAll( schema.getIndexConfiguration() );
+
+            for ( int propertyKeyId : schema.getSortIds() )
+            {
+                try
+                {
+                    sortNames.add( propertyKeyTokenHolder.getTokenById( propertyKeyId ).name() );
+                }
+                catch ( TokenNotFoundException e )
+                {
+                    throw new IllegalStateException( "Property key id not found.", new PropertyKeyIdNotFoundKernelException( propertyKeyId, e ) );
+                }
+            }
+        }
+        List<String> sortPropertyNames = Collections.unmodifiableList( sortNames );
+
+        return new FulltextIndexDescriptor( descriptor, propertyNames, analyzer, analyzerName, eventuallyConsistent, sortPropertyNames );
     }
 
     private static void loadPersistedSettings( Properties settings, File indexFolder, FileSystemAbstraction fs )

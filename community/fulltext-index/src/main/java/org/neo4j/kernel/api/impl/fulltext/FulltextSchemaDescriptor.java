@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import java.util.Properties;
-
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.SchemaComputer;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
+import org.neo4j.kernel.api.schema.MultiTokenSortableSchemaDescriptor;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.lock.ResourceType;
+
+import java.util.Properties;
 
 class FulltextSchemaDescriptor implements SchemaDescriptor
 {
@@ -109,6 +110,18 @@ class FulltextSchemaDescriptor implements SchemaDescriptor
     public SchemaDescriptor schema()
     {
         return this;
+    }
+
+    public int[] getSortIds()
+    {
+        if ( schema instanceof MultiTokenSortableSchemaDescriptor )
+        {
+            return ((MultiTokenSortableSchemaDescriptor) schema).getSortIds();
+        }
+        else
+        {
+            return new int[0];
+        }
     }
 
     @Override

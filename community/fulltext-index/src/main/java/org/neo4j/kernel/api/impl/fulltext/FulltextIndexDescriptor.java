@@ -46,7 +46,7 @@ class FulltextIndexDescriptor extends StoreIndexDescriptor
         this.sortProperties = null;
     }
 
-    public FulltextIndexDescriptor( StoreIndexDescriptor indexDescriptor, List<String> propertyNames, Analyzer analyzer, String analyzerName,
+    FulltextIndexDescriptor( StoreIndexDescriptor indexDescriptor, List<String> propertyNames, Analyzer analyzer, String analyzerName,
             boolean eventuallyConsistent, Collection<String> sortProperties )
     {
         super( indexDescriptor );
