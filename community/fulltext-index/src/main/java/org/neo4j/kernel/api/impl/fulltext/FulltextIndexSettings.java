@@ -48,6 +48,7 @@ public class FulltextIndexSettings
     public static final String INDEX_CONFIG_EVENTUALLY_CONSISTENT = "eventually_consistent";
     private static final String INDEX_CONFIG_FILE = "fulltext-index.properties";
     private static final String INDEX_CONFIG_PROPERTY_NAMES = "propertyNames";
+    public static final String INDEX_CONFIG_SORT_ENABLED = "sortEnabled";
 
     static FulltextIndexDescriptor readOrInitialiseDescriptor( StoreIndexDescriptor descriptor, String defaultAnalyzerName,
             TokenHolder propertyKeyTokenHolder, File indexFolder, FileSystemAbstraction fileSystem )

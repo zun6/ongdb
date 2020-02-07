@@ -319,6 +319,42 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
     }
 
     @Override
+    public SchemaDescriptor schemaForSort( EntityType type, String[] entityTokens, Properties indexConfiguration, String[] properties, String[] sortProperties)
+    {
+        if ( entityTokens.length == 0 )
+        {
+            throw new BadSchemaException(
+                    "At least one " + ( type == EntityType.NODE ? "label" : "relationship type" ) + " must be specified when creating a fulltext index." );
+        }
+        if ( properties.length == 0 )
+        {
+            throw new BadSchemaException( "At least one property name must be specified when creating a fulltext index." );
+        }
+        if ( Arrays.asList( properties ).contains( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID ) )
+        {
+            throw new BadSchemaException( "Unable to index the property, the name is reserved for internal use " +
+                    LuceneFulltextDocumentStructure.FIELD_ENTITY_ID );
+        }
+        int[] entityTokenIds = new int[entityTokens.length];
+        if ( type == EntityType.NODE )
+        {
+            tokenHolders.labelTokens().getOrCreateIds( entityTokens, entityTokenIds );
+        }
+        else
+        {
+            tokenHolders.relationshipTypeTokens().getOrCreateIds( entityTokens, entityTokenIds );
+        }
+        // Add sortProperties into this stream so propertyIds includes them.
+        int[] propertyIds = Arrays.stream( properties ).mapToInt( tokenHolders.propertyKeyTokens()::getOrCreateId ).toArray();
+
+        SchemaDescriptor schema = SchemaDescriptorFactory.multiToken( entityTokenIds, type, propertyIds );
+        indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
+        indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT, defaultEventuallyConsistentSetting );
+        indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_SORT_ENABLED, true );
+        return new FulltextSchemaDescriptor( schema, indexConfiguration );
+    }
+
+    @Override
     public ScoreEntityIterator query( KernelTransaction ktx, String indexName, String queryString ) throws IndexNotFoundKernelException, ParseException
     {
         KernelTransactionImplementation kti = (KernelTransactionImplementation) ktx;
