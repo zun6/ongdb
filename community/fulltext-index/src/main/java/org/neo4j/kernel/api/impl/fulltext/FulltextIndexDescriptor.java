@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 import java.util.Collection;
 import java.util.List;
@@ -33,6 +34,8 @@ class FulltextIndexDescriptor extends StoreIndexDescriptor
     private final String analyzerName;
     private final boolean eventuallyConsistent;
 
+    private final Collection<String> sortProperties;
+
     FulltextIndexDescriptor( StoreIndexDescriptor descriptor, List<String> propertyNames, Analyzer analyzer, String analyzerName, boolean eventuallyConsistent )
     {
         super( descriptor );
@@ -40,11 +43,28 @@ class FulltextIndexDescriptor extends StoreIndexDescriptor
         this.analyzer = analyzer;
         this.analyzerName = analyzerName;
         this.eventuallyConsistent = eventuallyConsistent;
+        this.sortProperties = null;
+    }
+
+    public FulltextIndexDescriptor( StoreIndexDescriptor indexDescriptor, List<String> propertyNames, Analyzer analyzer, String analyzerName,
+            boolean eventuallyConsistent, Collection<String> sortProperties )
+    {
+        super( indexDescriptor );
+        this.propertyNames = propertyNames;
+        this.analyzer = analyzer;
+        this.analyzerName = analyzerName;
+        this.eventuallyConsistent = eventuallyConsistent;
+        this.sortProperties = sortProperties;
     }
 
     Collection<String> propertyNames()
     {
         return propertyNames;
+    }
+
+    Collection<String> sortPropertyNames()
+    {
+        return sortProperties;
     }
 
     public Analyzer analyzer()

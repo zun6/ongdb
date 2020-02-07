@@ -47,12 +47,25 @@ class SimpleFulltextIndexReader extends FulltextIndexReader
     private final TokenHolder propertyKeyTokenHolder;
     private final String[] properties;
 
+    private final String[] sortProperties;
+
     SimpleFulltextIndexReader( SearcherReference searcherRef, String[] properties, Analyzer analyzer, TokenHolder propertyKeyTokenHolder )
     {
         this.searcherRef = searcherRef;
         this.properties = properties;
         this.analyzer = analyzer;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        this.sortProperties = null;
+    }
+
+    public SimpleFulltextIndexReader( SearcherReference searcherRef, Analyzer analyzer, TokenHolder propertyKeyTokenHolder, String[] properties,
+            String[] sortProperties )
+    {
+        this.searcherRef = searcherRef;
+        this.analyzer = analyzer;
+        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        this.properties = properties;
+        this.sortProperties = sortProperties;
     }
 
     @Override

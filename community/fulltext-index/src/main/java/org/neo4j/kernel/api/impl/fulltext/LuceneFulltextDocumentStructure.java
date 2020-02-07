@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -32,13 +33,13 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
-
-import java.util.Collection;
-import java.util.Iterator;
-
+import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
+
+import java.util.Collection;
+import java.util.Iterator;
 
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
@@ -60,10 +61,18 @@ public class LuceneFulltextDocumentStructure
         return doc;
     }
 
+    // I think this needs to be edited to actually index the sortable properties.
     public static Document documentRepresentingProperties( long id, Collection<String> propertyNames, Value[] values )
     {
         DocWithId document = reuseDocument( id );
         document.setValues( propertyNames, values );
+        return document.document;
+    }
+
+    public static Document documentWithSorts( long id, Collection<String> sortProperties, Value[] values )
+    {
+        DocWithId document = reuseDocument( id );
+        document.setSortFields( sortProperties, values );
         return document.document;
     }
 
@@ -142,6 +151,27 @@ public class LuceneFulltextDocumentStructure
                 if ( value != null && value.valueGroup() == ValueGroup.TEXT )
                 {
                     Field field = encodeValueField( name, value );
+                    document.add( field );
+                }
+            }
+        }
+
+        private void setSortFields( Collection<String> names, Value[] values)
+        {
+            int i = 0;
+            for ( String name : names )
+            {
+                Value value = values[i++];
+                if ( value != null && value.valueGroup() == ValueGroup.TEXT )
+                {
+                    Field field = encodeValueField( name, value );
+                    document.add( field );
+                }
+                else if (value != null && value.valueGroup() == ValueGroup.NUMBER)
+                {
+                    // Just testing for Long values
+                    NumberValue numberValue = (NumberValue) value;
+                    Field field = new LongField( name, numberValue.longValue(), NO );
                     document.add( field );
                 }
             }
