@@ -59,6 +59,24 @@ public class SchemaDescriptorFactory
         return new MultiTokenSchemaDescriptor( entityTokens, entityType, propertyIds );
     }
 
+    public static MultiTokenSortableSchemaDescriptor multiTokenSort( int[] entityTokens, EntityType entityType, int[] propertyIds, int[] sortIds )
+    {
+        validatePropertyIds( propertyIds );
+        validatePropertyIds( sortIds );
+        switch ( entityType )
+        {
+        case NODE:
+            validateLabelIds( entityTokens );
+            break;
+        case RELATIONSHIP:
+            validateRelationshipTypeIds( entityTokens );
+            break;
+        default:
+            throw new IllegalArgumentException( "Cannot create schemadescriptor of type :" + entityType );
+        }
+        return new MultiTokenSortableSchemaDescriptor( entityTokens, entityType, propertyIds, sortIds );
+    }
+
     private static void validatePropertyIds( int[] propertyIds )
     {
         for ( int propertyId : propertyIds )

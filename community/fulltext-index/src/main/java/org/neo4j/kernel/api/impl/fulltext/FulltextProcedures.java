@@ -134,12 +134,13 @@ public class FulltextProcedures
             @Name( "indexName" ) String name,
             @Name( "labels" ) List<String> labels,
             @Name( "propertyNames" ) List<String> properties,
+            @Name( value = "sortPropertyNames", defaultValue = "[]") List<String> sortProperties,
             @Name( value = "config", defaultValue = "" ) Map<String,String> indexConfigurationMap )
             throws InvalidTransactionTypeKernelException, SchemaKernelException
     {
         Properties indexConfiguration = new Properties();
         indexConfiguration.putAll( indexConfigurationMap );
-        SchemaDescriptor schemaDescriptor = accessor.schemaFor( EntityType.NODE, stringArray( labels ), indexConfiguration, stringArray( properties ) );
+        SchemaDescriptor schemaDescriptor = accessor.schemaForSort( EntityType.NODE, stringArray( labels ), indexConfiguration, stringArray( properties ), stringArray( sortProperties ) );
         tx.schemaWrite().indexCreate( schemaDescriptor, DESCRIPTOR.name(), Optional.of( name ) );
     }
 

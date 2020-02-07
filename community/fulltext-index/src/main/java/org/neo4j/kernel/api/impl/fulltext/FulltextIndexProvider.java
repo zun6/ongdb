@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.queryparser.classic.ParseException;
 
 import java.io.IOException;
@@ -346,8 +347,9 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
         }
         // Add sortProperties into this stream so propertyIds includes them.
         int[] propertyIds = Arrays.stream( properties ).mapToInt( tokenHolders.propertyKeyTokens()::getOrCreateId ).toArray();
+        int[] sortIds = Arrays.stream( sortProperties ).mapToInt( tokenHolders.propertyKeyTokens()::getOrCreateId ).toArray();
 
-        SchemaDescriptor schema = SchemaDescriptorFactory.multiToken( entityTokenIds, type, propertyIds );
+        SchemaDescriptor schema = SchemaDescriptorFactory.multiTokenSort( entityTokenIds, type, propertyIds, sortIds);
         indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
         indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT, defaultEventuallyConsistentSetting );
         indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_SORT_ENABLED, true );
