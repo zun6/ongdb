@@ -19,17 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.queryparser.classic.ParseException;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -71,6 +61,15 @@ import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.readOrInitialiseDescriptor;
@@ -320,7 +319,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
     }
 
     @Override
-    public SchemaDescriptor schemaForSort( EntityType type, String[] entityTokens, Properties indexConfiguration, String[] properties, String[] sortProperties)
+    public SchemaDescriptor schemaForSort( EntityType type, String[] entityTokens, Properties indexConfiguration, String[] properties, String[] sortProperties, Map<String,String> sortTypes)
     {
         if ( entityTokens.length == 0 )
         {
@@ -349,7 +348,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
         int[] propertyIds = Arrays.stream( properties ).mapToInt( tokenHolders.propertyKeyTokens()::getOrCreateId ).toArray();
         int[] sortIds = Arrays.stream( sortProperties ).mapToInt( tokenHolders.propertyKeyTokens()::getOrCreateId ).toArray();
 
-        SchemaDescriptor schema = SchemaDescriptorFactory.multiTokenSort( entityTokenIds, type, propertyIds, sortIds);
+        SchemaDescriptor schema = SchemaDescriptorFactory.multiTokenSort( entityTokenIds, type, propertyIds, sortIds, sortTypes);
         indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
         indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT, defaultEventuallyConsistentSetting );
         indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_SORT_ENABLED, true );

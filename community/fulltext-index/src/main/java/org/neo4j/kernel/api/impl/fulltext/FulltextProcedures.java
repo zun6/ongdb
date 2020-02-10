@@ -23,6 +23,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.queryparser.classic.ParseException;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -134,17 +135,17 @@ public class FulltextProcedures
             @Name( "indexName" ) String name,
             @Name( "labels" ) List<String> labels,
             @Name( "propertyNames" ) List<String> properties,
-            @Name( value = "sortPropertyNames", defaultValue = "[]") List<String> sortProperties,
+            @Name( value = "sortPropertyMap", defaultValue = "{}") Map<String,String> sortProperties,
             @Name( value = "config", defaultValue = "" ) Map<String,String> indexConfigurationMap )
             throws InvalidTransactionTypeKernelException, SchemaKernelException
     {
         Properties indexConfiguration = new Properties();
         indexConfiguration.putAll( indexConfigurationMap );
-        SchemaDescriptor schemaDescriptor = accessor.schemaForSort( EntityType.NODE, stringArray( labels ), indexConfiguration, stringArray( properties ), stringArray( sortProperties ) );
+        SchemaDescriptor schemaDescriptor = accessor.schemaForSort( EntityType.NODE, stringArray( labels ), indexConfiguration, stringArray( properties ), stringArray( sortProperties.keySet() ), sortProperties );
         tx.schemaWrite().indexCreate( schemaDescriptor, DESCRIPTOR.name(), Optional.of( name ) );
     }
 
-    private String[] stringArray( List<String> strings )
+    private String[] stringArray( Collection<String> strings )
     {
         return strings.toArray( ArrayUtils.EMPTY_STRING_ARRAY );
     }

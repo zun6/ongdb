@@ -22,6 +22,8 @@ package org.neo4j.kernel.api.schema;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.storageengine.api.EntityType;
 
+import java.util.Map;
+
 public class SchemaDescriptorFactory
 {
     private SchemaDescriptorFactory()
@@ -59,7 +61,7 @@ public class SchemaDescriptorFactory
         return new MultiTokenSchemaDescriptor( entityTokens, entityType, propertyIds );
     }
 
-    public static MultiTokenSortableSchemaDescriptor multiTokenSort( int[] entityTokens, EntityType entityType, int[] propertyIds, int[] sortIds )
+    public static MultiTokenSortableSchemaDescriptor multiTokenSort( int[] entityTokens, EntityType entityType, int[] propertyIds, int[] sortIds, Map<String,String> sortTypes )
     {
         validatePropertyIds( propertyIds );
         validatePropertyIds( sortIds );
@@ -74,7 +76,7 @@ public class SchemaDescriptorFactory
         default:
             throw new IllegalArgumentException( "Cannot create schemadescriptor of type :" + entityType );
         }
-        return new MultiTokenSortableSchemaDescriptor( entityTokens, entityType, propertyIds, sortIds );
+        return new MultiTokenSortableSchemaDescriptor( entityTokens, entityType, propertyIds, sortIds, sortTypes );
     }
 
     private static void validatePropertyIds( int[] propertyIds )

@@ -24,6 +24,7 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
@@ -34,7 +35,8 @@ class FulltextIndexDescriptor extends StoreIndexDescriptor
     private final String analyzerName;
     private final boolean eventuallyConsistent;
 
-    private final Collection<String> sortProperties;
+    private final List<String> sortProperties;
+    private final Map<String,String> sortTypes;
 
     FulltextIndexDescriptor( StoreIndexDescriptor descriptor, List<String> propertyNames, Analyzer analyzer, String analyzerName, boolean eventuallyConsistent )
     {
@@ -44,10 +46,11 @@ class FulltextIndexDescriptor extends StoreIndexDescriptor
         this.analyzerName = analyzerName;
         this.eventuallyConsistent = eventuallyConsistent;
         this.sortProperties = null;
+        this.sortTypes = null;
     }
 
     FulltextIndexDescriptor( StoreIndexDescriptor indexDescriptor, List<String> propertyNames, Analyzer analyzer, String analyzerName,
-            boolean eventuallyConsistent, Collection<String> sortProperties )
+            boolean eventuallyConsistent, List<String> sortProperties )
     {
         super( indexDescriptor );
         this.propertyNames = propertyNames;
@@ -55,6 +58,19 @@ class FulltextIndexDescriptor extends StoreIndexDescriptor
         this.analyzerName = analyzerName;
         this.eventuallyConsistent = eventuallyConsistent;
         this.sortProperties = sortProperties;
+        this.sortTypes = null;
+    }
+
+    FulltextIndexDescriptor( StoreIndexDescriptor indexDescriptor, List<String> propertyNames, Analyzer analyzer, String analyzerName,
+            boolean eventuallyConsistent, List<String> sortProperties, Map<String,String> sortTypes )
+    {
+        super( indexDescriptor );
+        this.propertyNames = propertyNames;
+        this.analyzer = analyzer;
+        this.analyzerName = analyzerName;
+        this.eventuallyConsistent = eventuallyConsistent;
+        this.sortProperties = sortProperties;
+        this.sortTypes = sortTypes;
     }
 
     Collection<String> propertyNames()
@@ -65,6 +81,11 @@ class FulltextIndexDescriptor extends StoreIndexDescriptor
     Collection<String> sortPropertyNames()
     {
         return sortProperties;
+    }
+
+    Map<String,String> sortTypes()
+    {
+        return sortTypes;
     }
 
     public Analyzer analyzer()

@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.apache.lucene.queryparser.classic.ParseException;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Stream;
 
@@ -35,7 +36,7 @@ public interface FulltextAdapter
 {
     SchemaDescriptor schemaFor( EntityType type, String[] entityTokens, Properties indexConfiguration, String... properties );
 
-    SchemaDescriptor schemaForSort( EntityType type, String[] entityTokens, Properties indexConfiguration, String[] properties, String[] sortProperties );
+    SchemaDescriptor schemaForSort( EntityType type, String[] entityTokens, Properties indexConfiguration, String[] properties, String[] sortProperties, Map<String,String> sortTypes);
 
     ScoreEntityIterator query( KernelTransaction tx, String indexName, String queryString ) throws IOException, IndexNotFoundKernelException, ParseException;
 

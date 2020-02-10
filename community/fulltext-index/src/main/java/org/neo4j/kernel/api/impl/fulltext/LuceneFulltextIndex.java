@@ -34,6 +34,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader> implements Closeable
 {
@@ -45,6 +46,7 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
     private final File transactionsFolder;
 
     private final Collection<String> sortProperties;
+    private final Map<String,String> sortTypes;
 
     LuceneFulltextIndex( PartitionedIndexStorage storage, IndexPartitionFactory partitionFactory, FulltextIndexDescriptor descriptor,
             TokenHolder propertyKeyTokenHolder )
@@ -59,6 +61,7 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
         transactionsFolder = new File( indexFolder.getParent(), indexFolder.getName() + ".tx" );
 
         sortProperties = descriptor.sortPropertyNames();
+        sortTypes = descriptor.sortTypes();
     }
 
     @Override

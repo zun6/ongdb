@@ -30,7 +30,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -80,6 +82,7 @@ public class FulltextIndexSettings
 
 
         List<String> sortNames = new ArrayList<>();
+        Map<String,String> sortTypes = new HashMap<>(  );
         if ( descriptor.schema() instanceof FulltextSchemaDescriptor )
         {
             FulltextSchemaDescriptor schema = (FulltextSchemaDescriptor) descriptor.schema();
@@ -89,7 +92,9 @@ public class FulltextIndexSettings
             {
                 try
                 {
-                    sortNames.add( propertyKeyTokenHolder.getTokenById( propertyKeyId ).name() );
+                    String name = propertyKeyTokenHolder.getTokenById( propertyKeyId ).name();
+                    sortNames.add( name );
+                    sortTypes.put( name, schema.getSortType( name )  );
                 }
                 catch ( TokenNotFoundException e )
                 {
@@ -99,7 +104,7 @@ public class FulltextIndexSettings
         }
         List<String> sortPropertyNames = Collections.unmodifiableList( sortNames );
 
-        return new FulltextIndexDescriptor( descriptor, propertyNames, analyzer, analyzerName, eventuallyConsistent, sortPropertyNames );
+        return new FulltextIndexDescriptor( descriptor, propertyNames, analyzer, analyzerName, eventuallyConsistent, sortPropertyNames, sortTypes );
     }
 
     private static void loadPersistedSettings( Properties settings, File indexFolder, FileSystemAbstraction fs )

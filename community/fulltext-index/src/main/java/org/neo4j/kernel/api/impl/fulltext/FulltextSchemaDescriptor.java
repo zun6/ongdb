@@ -124,6 +124,23 @@ class FulltextSchemaDescriptor implements SchemaDescriptor
         }
     }
 
+    public String getSortType( String sortName )
+    {
+        if ( schema instanceof MultiTokenSortableSchemaDescriptor )
+        {
+            if ( ((MultiTokenSortableSchemaDescriptor) schema).getSortTypes().containsKey( sortName ) )
+            {
+                return ((MultiTokenSortableSchemaDescriptor) schema).getSortTypes().get( sortName );
+            }
+            return "";
+        }
+        else
+        {
+            return "";
+        }
+    }
+
+
     @Override
     public int hashCode()
     {
