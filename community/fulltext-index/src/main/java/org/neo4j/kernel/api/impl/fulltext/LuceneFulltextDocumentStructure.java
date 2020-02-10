@@ -21,8 +21,8 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexableField;
@@ -33,7 +33,7 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.neo4j.values.storable.NumberValue;
+import org.apache.lucene.util.NumericUtils;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -69,10 +69,13 @@ public class LuceneFulltextDocumentStructure
         return document.document;
     }
 
-    public static Document documentWithSorts( long id, Collection<String> sortProperties, Value[] values )
+    // The propertyNames *always* line up with the values
+    public static Document documentRepresentingPropertiesWithSort( long id, Collection<String> propertyNames, Value[] values, Collection<String> sortProperties )
     {
         DocWithId document = reuseDocument( id );
-        document.setSortFields( sortProperties, values );
+        // Can't do this since need to split up the true properties from the sortProperties
+//        document.setValues( propertyNames, values );
+        document.setValuesWithSort( propertyNames, values, sortProperties );
         return document.document;
     }
 
@@ -81,6 +84,29 @@ public class LuceneFulltextDocumentStructure
         TextValue textValue = (TextValue) value;
         String stringValue = textValue.stringValue();
         return new TextField( propertyKey, stringValue, NO );
+    }
+
+    private static Field encodeSortableValueField( String sortKey, Value value )
+    {
+        if (value.valueGroup().equals( ValueGroup.NUMBER ))
+        {
+            if (value.asObject() instanceof Long)
+            {
+                // Does this work?
+                return new SortedNumericDocValuesField( sortKey, (Long) value.asObject() );
+            }
+            else if ( value.asObject() instanceof Float )
+            {
+                return new SortedNumericDocValuesField( sortKey, NumericUtils.floatToSortableInt(
+                        (Float) value.asObject() ) );
+            }
+        }
+        if( value.valueGroup().equals( ValueGroup.TEXT ))
+        {
+            // Does this work?
+            return new TextField( sortKey, (String) value.asObject(), NO );
+        }
+        return null;
     }
 
     static long getNodeId( Document from )
@@ -156,23 +182,45 @@ public class LuceneFulltextDocumentStructure
             }
         }
 
-        private void setSortFields( Collection<String> names, Value[] values)
+
+        // We are guaranteed that
+        //         sortProperties.size() >= propertyNames.size() - 1
+        // Are we guaranteed any about the order of the sort properties as well???
+        private void setValuesWithSort( Collection<String> propertyNames, Value[] values, Collection<String> sortProperties )
         {
             int i = 0;
-            for ( String name : names )
+            Iterator<String> spi = sortProperties.iterator();
+
+            boolean isSortProperty = false;
+
+            for ( String name : propertyNames )
             {
-                Value value = values[i++];
-                if ( value != null && value.valueGroup() == ValueGroup.TEXT )
+                isSortProperty = false;
+                // This will only work if all sortProperties are always after all non-sort props in propertyNames; Is it?
+                if ( sortProperties.contains( name ) && spi.hasNext() )
                 {
-                    Field field = encodeValueField( name, value );
-                    document.add( field );
+                    String next = spi.next();
+
+                    if ( name.equals( next ) )
+                    {
+                        isSortProperty = true;
+                        Value value = values[i++];
+                        if ( value != null )
+                        {
+                            Field sortableField = encodeSortableValueField( name, value );
+                            document.add( sortableField );
+                        }
+                    }
                 }
-                else if (value != null && value.valueGroup() == ValueGroup.NUMBER)
+
+                if ( !isSortProperty )
                 {
-                    // Just testing for Long values
-                    NumberValue numberValue = (NumberValue) value;
-                    Field field = new LongField( name, numberValue.longValue(), NO );
-                    document.add( field );
+                    Value value = values[i++];
+                    if ( value != null && value.valueGroup() == ValueGroup.TEXT )
+                    {
+                        Field field = encodeValueField( name, value );
+                        document.add( field );
+                    }
                 }
             }
         }

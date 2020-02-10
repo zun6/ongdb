@@ -20,12 +20,6 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.document.Document;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -34,7 +28,13 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.documentRepresentingProperties;
+import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.documentRepresentingPropertiesWithSort;
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.newTermForChangeOrRemove;
 
 public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextIndexReader,DatabaseFulltextIndex>
@@ -130,8 +130,17 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
         {
             try
             {
-                Document document = documentRepresentingProperties( entityId, descriptor.propertyNames(), values );
-                writer.updateDocument( newTermForChangeOrRemove( entityId ), document );
+                if ( descriptor.sortPropertyNames() == null || descriptor.sortPropertyNames().isEmpty() )
+                {
+                    Document document = documentRepresentingProperties( entityId, descriptor.propertyNames(), values );
+                    writer.updateDocument( newTermForChangeOrRemove( entityId ), document );
+                }
+                // Sort Properties are present, use them.
+                else
+                {
+                    Document document = documentRepresentingPropertiesWithSort( entityId, descriptor.propertyNames(), values, descriptor.sortPropertyNames() );
+                    writer.updateDocument( newTermForChangeOrRemove( entityId ), document );
+                }
             }
             catch ( IOException e )
             {
@@ -144,8 +153,17 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
         {
             try
             {
-                Document document = documentRepresentingProperties( entityId, descriptor.propertyNames(), values );
-                writer.addDocument( document );
+                if ( descriptor.sortPropertyNames() == null || descriptor.sortPropertyNames().isEmpty() )
+                {
+                    Document document = documentRepresentingProperties( entityId, descriptor.propertyNames(), values );
+                    writer.addDocument( document );
+                }
+                // Sort Properties are present, use them.
+                else
+                {
+                    Document document = documentRepresentingPropertiesWithSort( entityId, descriptor.propertyNames(), values, descriptor.sortPropertyNames() );
+                    writer.addDocument( document );
+                }
             }
             catch ( IOException e )
             {
@@ -158,7 +176,17 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
         {
             try
             {
-                writer.updateDocument( newTermForChangeOrRemove( entityId ), documentRepresentingProperties( entityId, descriptor.propertyNames(), values ) );
+                if ( descriptor.sortPropertyNames() == null || descriptor.sortPropertyNames().isEmpty() )
+                {
+                    Document document = documentRepresentingProperties( entityId, descriptor.propertyNames(), values );
+                    writer.updateDocument( newTermForChangeOrRemove( entityId ), document );
+                }
+                // Sort Properties are present, use them.
+                else
+                {
+                    Document document = documentRepresentingPropertiesWithSort( entityId, descriptor.propertyNames(), values, descriptor.sortPropertyNames() );
+                    writer.updateDocument( newTermForChangeOrRemove( entityId ), document );
+                }
             }
             catch ( IOException e )
             {
