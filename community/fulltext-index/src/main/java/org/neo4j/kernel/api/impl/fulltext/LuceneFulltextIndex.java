@@ -100,6 +100,11 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
         return sortProperties.toArray( new String[0] );
     }
 
+    Map<String,String> getSortTypes()
+    {
+        return sortTypes;
+    }
+
     Analyzer getAnalyzer()
     {
         return analyzer;
@@ -115,13 +120,13 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
     {
         AbstractIndexPartition singlePartition = getFirstPartition( partitions );
         SearcherReference searcher = new PartitionSearcherReference( singlePartition.acquireSearcher() );
-        return new SimpleFulltextIndexReader( searcher, getPropertiesArray(), analyzer, propertyKeyTokenHolder );
+        return new SimpleFulltextIndexReader( searcher, getPropertiesArray(), analyzer, propertyKeyTokenHolder, getSortTypes() );
     }
 
     @Override
     protected FulltextIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedFulltextIndexReader( searchers, getPropertiesArray(), analyzer, propertyKeyTokenHolder );
+        return new PartitionedFulltextIndexReader( searchers, getPropertiesArray(), analyzer, propertyKeyTokenHolder, getSortTypes() );
     }
 }

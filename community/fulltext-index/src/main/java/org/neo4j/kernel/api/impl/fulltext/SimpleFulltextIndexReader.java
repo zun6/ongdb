@@ -28,14 +28,14 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSortField;
 import org.apache.lucene.search.TotalHitCountCollector;
-
-import java.io.IOException;
-
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.values.storable.Value;
+
+import java.io.IOException;
+import java.util.Map;
 
 /**
  * Lucene index reader that is able to read/sample a single partition of a partitioned Lucene index.
@@ -50,6 +50,7 @@ class SimpleFulltextIndexReader extends FulltextIndexReader
     private final String[] properties;
 
     private final String[] sortProperties;
+    private final Map<String,String> sortTypes;
 
     SimpleFulltextIndexReader( SearcherReference searcherRef, String[] properties, Analyzer analyzer, TokenHolder propertyKeyTokenHolder )
     {
@@ -58,6 +59,7 @@ class SimpleFulltextIndexReader extends FulltextIndexReader
         this.analyzer = analyzer;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.sortProperties = null;
+        this.sortTypes = null;
     }
 
     public SimpleFulltextIndexReader( SearcherReference searcherRef, Analyzer analyzer, TokenHolder propertyKeyTokenHolder, String[] properties,
@@ -68,6 +70,18 @@ class SimpleFulltextIndexReader extends FulltextIndexReader
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.properties = properties;
         this.sortProperties = sortProperties;
+        this.sortTypes = null;
+    }
+
+    SimpleFulltextIndexReader( SearcherReference searcherRef,  String[] properties, Analyzer analyzer, TokenHolder propertyKeyTokenHolder,
+            Map<String,String> sortTypes )
+    {
+        this.searcherRef = searcherRef;
+        this.analyzer = analyzer;
+        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        this.properties = properties;
+        this.sortProperties = null;
+        this.sortTypes = sortTypes;
     }
 
     @Override
@@ -121,8 +135,8 @@ class SimpleFulltextIndexReader extends FulltextIndexReader
     {
         try
         {
-            SortField sortField = new SortedNumericSortField( sortFieldString, SortField.Type.LONG );
-            Sort sort = new Sort( sortField );
+
+            Sort sort = buildSort( sortFieldString );
 
             DocValuesCollector docValuesCollector = new DocValuesCollector( true );
             getIndexSearcher().search( query, docValuesCollector );
@@ -134,6 +148,35 @@ class SimpleFulltextIndexReader extends FulltextIndexReader
         {
             throw new RuntimeException( e );
         }
+    }
+
+    private Sort buildSort( String sortFieldString )
+    {
+
+        if ( sortTypes != null && sortTypes.containsKey( sortFieldString ) )
+        {
+            SortField sortField;
+            String sortType = sortTypes.get( sortFieldString );
+
+            if ( sortType.equalsIgnoreCase( "LONG" ) )
+            {
+                sortField = new SortedNumericSortField( sortFieldString, SortField.Type.LONG );
+            }
+            else if ( sortType.equalsIgnoreCase( "FLOAT" ) )
+            {
+                sortField = new SortedNumericSortField( sortFieldString, SortField.Type.FLOAT );
+            }
+            else if ( sortType.equalsIgnoreCase( "STRING" ) )
+            {
+                sortField = new SortField( sortFieldString, SortField.Type.STRING );
+            }
+            else
+            {
+                throw new RuntimeException( "Unable to determine sortField type." );
+            }
+            return new Sort( sortField );
+        }
+        throw new RuntimeException( "Either sortTypes is null or sortField is not in sortTypes." );
     }
 
     private IndexSearcher getIndexSearcher()

@@ -25,6 +25,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.neo4j.io.IOUtils;
@@ -44,11 +45,11 @@ class PartitionedFulltextIndexReader extends FulltextIndexReader
 
     private final List<FulltextIndexReader> indexReaders;
 
-    PartitionedFulltextIndexReader( List<PartitionSearcher> partitionSearchers, String[] properties, Analyzer analyzer, TokenHolder propertyKeyTokenHolder )
+    PartitionedFulltextIndexReader( List<PartitionSearcher> partitionSearchers, String[] properties, Analyzer analyzer, TokenHolder propertyKeyTokenHolder, Map<String,String> sortTypes)
     {
         this( partitionSearchers.stream()
                 .map( PartitionSearcherReference::new )
-                .map( searcher -> new SimpleFulltextIndexReader( searcher, properties, analyzer, propertyKeyTokenHolder ) )
+                .map( searcher -> new SimpleFulltextIndexReader( searcher, properties, analyzer, propertyKeyTokenHolder, sortTypes ) )
                 .collect( Collectors.toList() ) );
     }
 
