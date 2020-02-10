@@ -186,6 +186,7 @@ public class LuceneFulltextDocumentStructure
         // We are guaranteed that
         //         sortProperties.size() >= propertyNames.size() - 1
         // Are we guaranteed any about the order of the sort properties as well???
+        // todo: Make sure this works if multiple FT/multiple sort properties are given
         private void setValuesWithSort( Collection<String> propertyNames, Value[] values, Collection<String> sortProperties )
         {
             int i = 0;

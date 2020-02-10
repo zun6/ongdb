@@ -39,6 +39,8 @@ public interface FulltextAdapter
 
     ScoreEntityIterator query( KernelTransaction tx, String indexName, String queryString ) throws IOException, IndexNotFoundKernelException, ParseException;
 
+    ScoreEntityIterator queryWithSort( KernelTransaction tx, String indexName, String queryString, String sortProperty ) throws IOException, IndexNotFoundKernelException, ParseException;
+
     void awaitRefresh();
 
     Stream<AnalyzerProvider> listAvailableAnalyzers();

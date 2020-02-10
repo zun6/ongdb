@@ -25,6 +25,8 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedNumericSortField;
 import org.apache.lucene.search.TotalHitCountCollector;
 
 import java.io.IOException;
@@ -90,6 +92,15 @@ class SimpleFulltextIndexReader extends FulltextIndexReader
         return indexQuery( query );
     }
 
+    @Override
+    public ScoreEntityIterator queryWithSort( String queryString, String sortField ) throws ParseException
+    {
+        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
+        multiFieldQueryParser.setAllowLeadingWildcard( true );
+        Query query = multiFieldQueryParser.parse( queryString );
+        return indexQueryWithSort( query, sortField );
+    }
+
     private ScoreEntityIterator indexQuery( Query query )
     {
         try
@@ -98,6 +109,25 @@ class SimpleFulltextIndexReader extends FulltextIndexReader
             getIndexSearcher().search( query, docValuesCollector );
             ValuesIterator sortedValuesIterator =
                     docValuesCollector.getSortedValuesIterator( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID, Sort.RELEVANCE );
+            return new ScoreEntityIterator( sortedValuesIterator );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private ScoreEntityIterator indexQueryWithSort( Query query, String sortFieldString )
+    {
+        try
+        {
+            SortField sortField = new SortedNumericSortField( sortFieldString, SortField.Type.LONG );
+            Sort sort = new Sort( sortField );
+
+            DocValuesCollector docValuesCollector = new DocValuesCollector( true );
+            getIndexSearcher().search( query, docValuesCollector );
+            ValuesIterator sortedValuesIterator =
+                    docValuesCollector.getSortedValuesIterator( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID, sort );
             return new ScoreEntityIterator( sortedValuesIterator );
         }
         catch ( IOException e )

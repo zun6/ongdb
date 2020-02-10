@@ -376,6 +376,26 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
         return fulltextIndexReader.query( queryString );
     }
 
+    @Override
+    public ScoreEntityIterator queryWithSort( KernelTransaction ktx, String indexName, String queryString, String sortProperty ) throws IndexNotFoundKernelException, ParseException
+    {
+        KernelTransactionImplementation kti = (KernelTransactionImplementation) ktx;
+        AllStoreHolder allStoreHolder = (AllStoreHolder) kti.dataRead();
+        IndexReference indexReference = kti.schemaRead().indexGetForName( indexName );
+        FulltextIndexReader fulltextIndexReader;
+        if ( kti.hasTxStateWithChanges() && !isEventuallyConsistent( indexReference ) )
+        {
+            FulltextAuxiliaryTransactionState auxiliaryTxState = (FulltextAuxiliaryTransactionState) allStoreHolder.auxiliaryTxState( TX_STATE_PROVIDER_KEY );
+            fulltextIndexReader = auxiliaryTxState.indexReader( indexReference, kti );
+        }
+        else
+        {
+            IndexReader indexReader = allStoreHolder.indexReader( indexReference, false );
+            fulltextIndexReader = (FulltextIndexReader) indexReader;
+        }
+        return fulltextIndexReader.queryWithSort( queryString, sortProperty );
+    }
+
     private boolean isEventuallyConsistent( IndexReference indexReference )
     {
         if ( indexReference instanceof CapableIndexDescriptor )
