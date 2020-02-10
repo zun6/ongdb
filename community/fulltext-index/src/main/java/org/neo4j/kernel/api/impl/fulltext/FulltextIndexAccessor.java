@@ -138,7 +138,7 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
                 // Sort Properties are present, use them.
                 else
                 {
-                    Document document = documentRepresentingPropertiesWithSort( entityId, descriptor.propertyNames(), values, descriptor.sortPropertyNames() );
+                    Document document = documentRepresentingPropertiesWithSort( entityId, descriptor.propertyNames(), values, descriptor.sortPropertyNames(), descriptor.sortTypes() );
                     writer.updateDocument( newTermForChangeOrRemove( entityId ), document );
                 }
             }
@@ -161,7 +161,7 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
                 // Sort Properties are present, use them.
                 else
                 {
-                    Document document = documentRepresentingPropertiesWithSort( entityId, descriptor.propertyNames(), values, descriptor.sortPropertyNames() );
+                    Document document = documentRepresentingPropertiesWithSort( entityId, descriptor.propertyNames(), values, descriptor.sortPropertyNames(), descriptor.sortTypes() );
                     writer.addDocument( document );
                 }
             }
@@ -184,7 +184,7 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
                 // Sort Properties are present, use them.
                 else
                 {
-                    Document document = documentRepresentingPropertiesWithSort( entityId, descriptor.propertyNames(), values, descriptor.sortPropertyNames() );
+                    Document document = documentRepresentingPropertiesWithSort( entityId, descriptor.propertyNames(), values, descriptor.sortPropertyNames(), descriptor.sortTypes() );
                     writer.updateDocument( newTermForChangeOrRemove( entityId ), document );
                 }
             }

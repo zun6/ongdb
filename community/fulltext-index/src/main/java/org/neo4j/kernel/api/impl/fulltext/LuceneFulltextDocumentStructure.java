@@ -40,6 +40,7 @@ import org.neo4j.values.storable.ValueGroup;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
@@ -70,12 +71,12 @@ public class LuceneFulltextDocumentStructure
     }
 
     // The propertyNames *always* line up with the values
-    public static Document documentRepresentingPropertiesWithSort( long id, Collection<String> propertyNames, Value[] values, Collection<String> sortProperties )
+    public static Document documentRepresentingPropertiesWithSort( long id, Collection<String> propertyNames, Value[] values, Collection<String> sortProperties, Map<String,String> sortTypes )
     {
         DocWithId document = reuseDocument( id );
         // Can't do this since need to split up the true properties from the sortProperties
 //        document.setValues( propertyNames, values );
-        document.setValuesWithSort( propertyNames, values, sortProperties );
+        document.setValuesWithSort( propertyNames, values, sortProperties, sortTypes );
         return document.document;
     }
 
@@ -145,6 +146,26 @@ public class LuceneFulltextDocumentStructure
         return builder.build();
     }
 
+    /**
+     * Validates that the sortField is the correct sortType.
+     */
+    private static boolean validateSortType( Field sortField, String sortType )
+    {
+        if ( sortType.equalsIgnoreCase( "LONG" ) )
+        {
+            return sortField instanceof SortedNumericDocValuesField;
+        }
+        if (sortType.equalsIgnoreCase( "FLOAT" ))
+        {
+            return sortField instanceof SortedNumericDocValuesField;
+        }
+        if (sortType.equalsIgnoreCase( "STRING" ))
+        {
+            return sortField instanceof TextField;
+        }
+        return false;
+    }
+
     private static class DocWithId
     {
         private final Document document;
@@ -187,7 +208,7 @@ public class LuceneFulltextDocumentStructure
         //         sortProperties.size() >= propertyNames.size() - 1
         // Are we guaranteed any about the order of the sort properties as well???
         // todo: Make sure this works if multiple FT/multiple sort properties are given
-        private void setValuesWithSort( Collection<String> propertyNames, Value[] values, Collection<String> sortProperties )
+        private void setValuesWithSort( Collection<String> propertyNames, Value[] values, Collection<String> sortProperties, Map<String,String> sortTypes )
         {
             int i = 0;
             Iterator<String> spi = sortProperties.iterator();
@@ -209,7 +230,10 @@ public class LuceneFulltextDocumentStructure
                         if ( value != null )
                         {
                             Field sortableField = encodeSortableValueField( name, value );
-                            document.add( sortableField );
+                            if ( validateSortType( sortableField, sortTypes.get( name ) ) )
+                            {
+                                document.add( sortableField );
+                            }
                         }
                     }
                 }
