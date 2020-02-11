@@ -337,10 +337,10 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
             throw new BadSchemaException( "Unable to index the property, the name is reserved for internal use " +
                     LuceneFulltextDocumentStructure.FIELD_ENTITY_ID );
         }
-        if ( Arrays.stream( allProps ).anyMatch( s -> s.endsWith( LuceneFulltextDocumentStructure.FIELD_FULLTEXT_SORT ) ) )
+        if ( Arrays.stream( allProps ).anyMatch( s -> s.endsWith( LuceneFulltextDocumentStructure.FIELD_FULLTEXT_SORT_SUFFIX ) ) )
         {
             throw new BadSchemaException( "Unable to create index. Property names ending with" +
-                    " '" + LuceneFulltextDocumentStructure.FIELD_FULLTEXT_SORT + "' are reserved for internal use only." );
+                    " '" + LuceneFulltextDocumentStructure.FIELD_FULLTEXT_SORT_SUFFIX + "' are reserved for internal use only." );
         }
         int[] entityTokenIds = new int[entityTokens.length];
         if ( type == EntityType.NODE )

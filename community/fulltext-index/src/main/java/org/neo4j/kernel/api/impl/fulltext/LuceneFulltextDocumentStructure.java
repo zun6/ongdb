@@ -50,7 +50,7 @@ import static org.apache.lucene.document.Field.Store.YES;
 public class LuceneFulltextDocumentStructure
 {
     public static final String FIELD_ENTITY_ID = "__neo4j__lucene__fulltext__index__internal__id__";
-    public static final String FIELD_FULLTEXT_SORT = "_fulltext_sort_field";
+    public static final String FIELD_FULLTEXT_SORT_SUFFIX = "__neo4j__lucene__sort__index__internal__id__";
 
     private static final ThreadLocal<DocWithId> perThreadDocument = ThreadLocal.withInitial( DocWithId::new );
 
@@ -252,7 +252,7 @@ public class LuceneFulltextDocumentStructure
             document.add( field );
 
             // Also encode a sortable version with a special name
-            Field sortableField = encodeSortableValueField( name + FIELD_FULLTEXT_SORT, value );
+            Field sortableField = encodeSortableValueField( name + FIELD_FULLTEXT_SORT_SUFFIX, value );
             document.add( sortableField );
         }
 

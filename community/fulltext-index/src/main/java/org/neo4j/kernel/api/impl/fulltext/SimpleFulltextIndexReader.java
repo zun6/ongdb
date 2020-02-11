@@ -127,7 +127,7 @@ class SimpleFulltextIndexReader extends FulltextIndexReader
             }
             else
             {
-                sort = new Sort( new SortField( sortFieldString + LuceneFulltextDocumentStructure.FIELD_FULLTEXT_SORT, SortField.Type.STRING ) );
+                sort = new Sort( new SortField( sortFieldString + LuceneFulltextDocumentStructure.FIELD_FULLTEXT_SORT_SUFFIX, SortField.Type.STRING ) );
             }
 
             DocValuesCollector docValuesCollector = new DocValuesCollector( true );
