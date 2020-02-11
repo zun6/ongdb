@@ -64,7 +64,6 @@ public class LuceneFulltextDocumentStructure
         return doc;
     }
 
-    // I think this needs to be edited to actually index the sortable properties.
     public static Document documentRepresentingProperties( long id, Collection<String> propertyNames, Value[] values )
     {
         DocWithId document = reuseDocument( id );
@@ -76,8 +75,6 @@ public class LuceneFulltextDocumentStructure
     public static Document documentRepresentingPropertiesWithSort( long id, Collection<String> propertyNames, Value[] values, Collection<String> sortProperties, Map<String,String> sortTypes )
     {
         DocWithId document = reuseDocument( id );
-        // Can't do this since need to split up the true properties from the sortProperties
-//        document.setValues( propertyNames, values );
         document.setValuesWithSort( propertyNames, values, sortProperties, sortTypes );
         return document.document;
     }
@@ -95,7 +92,6 @@ public class LuceneFulltextDocumentStructure
         {
             if (value.asObject() instanceof Long)
             {
-                // Does this work?
                 return new SortedNumericDocValuesField( sortKey, (Long) value.asObject() );
             }
             else if ( value.asObject() instanceof Float )
@@ -106,7 +102,6 @@ public class LuceneFulltextDocumentStructure
         }
         if( value.valueGroup().equals( ValueGroup.TEXT ))
         {
-            // Does this work?
             return new SortedDocValuesField( sortKey, new BytesRef( (String) value.asObject() ) );
         }
         return null;
@@ -209,7 +204,7 @@ public class LuceneFulltextDocumentStructure
         // We are guaranteed that
         //         sortProperties.size() >= propertyNames.size() - 1
         // Are we guaranteed any about the order of the sort properties as well???
-        // todo: Make sure this works if multiple FT/multiple sort properties are given
+        // todo: Make sure this works if multiple FT/multiple sort properties are given. What about when we're sorting on a FT prop?
         private void setValuesWithSort( Collection<String> propertyNames, Value[] values, Collection<String> sortProperties, Map<String,String> sortTypes )
         {
             int i = 0;
