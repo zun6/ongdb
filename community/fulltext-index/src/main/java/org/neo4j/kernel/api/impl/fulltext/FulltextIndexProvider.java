@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -330,15 +331,16 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
         {
             throw new BadSchemaException( "At least one property name must be specified when creating a fulltext index." );
         }
-        if ( Arrays.asList( properties ).contains( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID ) )
+        String[] allProps = ArrayUtils.addAll( properties, sortProperties);
+        if ( Arrays.asList( allProps ).contains( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID ) )
         {
             throw new BadSchemaException( "Unable to index the property, the name is reserved for internal use " +
                     LuceneFulltextDocumentStructure.FIELD_ENTITY_ID );
         }
-        if ( Arrays.stream( properties ).anyMatch( s -> s.endsWith( LuceneFulltextDocumentStructure.FIELD_FULLTEXT_SORT ) ) )
+        if ( Arrays.stream( allProps ).anyMatch( s -> s.endsWith( LuceneFulltextDocumentStructure.FIELD_FULLTEXT_SORT ) ) )
         {
-            throw new BadSchemaException( "Unable to index the property, names ending with" +
-                    " '" + LuceneFulltextDocumentStructure.FIELD_FULLTEXT_SORT + "'reserved for internal use." );
+            throw new BadSchemaException( "Unable to create index. Property names ending with" +
+                    " '" + LuceneFulltextDocumentStructure.FIELD_FULLTEXT_SORT + "' are reserved for internal use only." );
         }
         int[] entityTokenIds = new int[entityTokens.length];
         if ( type == EntityType.NODE )
@@ -349,7 +351,6 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
         {
             tokenHolders.relationshipTypeTokens().getOrCreateIds( entityTokens, entityTokenIds );
         }
-        // Add sortProperties into this stream so propertyIds includes them.
         int[] propertyIds = Arrays.stream( properties ).mapToInt( tokenHolders.propertyKeyTokens()::getOrCreateId ).toArray();
         int[] sortIds = Arrays.stream( sortProperties ).mapToInt( tokenHolders.propertyKeyTokens()::getOrCreateId ).toArray();
 
