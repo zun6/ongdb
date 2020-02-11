@@ -195,12 +195,7 @@ public class LuceneFulltextDocumentStructure
                 Value value = values[i++];
                 if ( value != null && value.valueGroup() == ValueGroup.TEXT )
                 {
-                    Field field = encodeValueField( name, value );
-                    document.add( field );
-
-                    // Also encode a sortable version with a special name
-                    Field sortableField = encodeSortableValueField( name + FIELD_FULLTEXT_SORT, value );
-                    document.add( sortableField );
+                    addFulltextFieldsToDocument( name, value );
                 }
             }
         }
@@ -245,16 +240,20 @@ public class LuceneFulltextDocumentStructure
                     Value value = values[i++];
                     if ( value != null && value.valueGroup() == ValueGroup.TEXT )
                     {
-                        Field field = encodeValueField( name, value );
-                        document.add( field );
-
-                        // Also encode a sortable version with a special name
-                        Field sortableField = encodeSortableValueField( name + FIELD_FULLTEXT_SORT, value );
-                        document.add( sortableField );
-
+                        addFulltextFieldsToDocument( name, value );
                     }
                 }
             }
+        }
+
+        private void addFulltextFieldsToDocument( String name, Value value )
+        {
+            Field field = encodeValueField( name, value );
+            document.add( field );
+
+            // Also encode a sortable version with a special name
+            Field sortableField = encodeSortableValueField( name + FIELD_FULLTEXT_SORT, value );
+            document.add( sortableField );
         }
 
         private void removeAllValueFields()
