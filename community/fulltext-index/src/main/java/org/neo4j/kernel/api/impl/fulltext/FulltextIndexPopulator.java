@@ -20,13 +20,6 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.document.Document;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
@@ -36,6 +29,12 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<FulltextIndexReader>>
 {
@@ -71,7 +70,7 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
-                writer.updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( update.getEntityId() ), updateAsDocument( update ) );
+                writer.updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( update.getEntityId() ), determineUpdatedDocument( update.getEntityId(), update ) );
             }
         }
         catch ( IOException e )
@@ -131,12 +130,12 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
                 case ADDED:
                     long nodeId = update.getEntityId();
                     luceneIndex.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                            LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId, descriptor.propertyNames(), update.values() ) );
+                            determineUpdatedDocument( nodeId, update ) );
 
                 case CHANGED:
                     long nodeId1 = update.getEntityId();
                     luceneIndex.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId1 ),
-                            LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId1, descriptor.propertyNames(), update.values() ) );
+                            determineUpdatedDocument( nodeId1, update ) );
                     break;
                 case REMOVED:
                     luceneIndex.getIndexWriter().deleteDocuments( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( update.getEntityId() ) );
@@ -154,6 +153,19 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
         @Override
         public void close()
         {
+        }
+    }
+
+    private Document determineUpdatedDocument( long nodeId, IndexEntryUpdate<?> update )
+    {
+        if ( descriptor.sortPropertyNames() == null || descriptor.sortPropertyNames().isEmpty() )
+        {
+            return LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId, descriptor.propertyNames(), update.values() );
+        }
+        else
+        {
+            return LuceneFulltextDocumentStructure.documentRepresentingPropertiesWithSort( nodeId, descriptor.propertyNames(), update.values(),
+                    descriptor.sortPropertyNames(), descriptor.sortTypes() );
         }
     }
 }
