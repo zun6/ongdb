@@ -197,6 +197,10 @@ public class LuceneFulltextDocumentStructure
                 {
                     Field field = encodeValueField( name, value );
                     document.add( field );
+
+                    // Also encode a sortable version with a special name
+                    Field sortableField = encodeSortableValueField( name + FIELD_FULLTEXT_SORT, value );
+                    document.add( sortableField );
                 }
             }
         }
