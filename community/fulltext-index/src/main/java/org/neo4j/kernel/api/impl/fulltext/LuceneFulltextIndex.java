@@ -120,13 +120,13 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
     {
         AbstractIndexPartition singlePartition = getFirstPartition( partitions );
         SearcherReference searcher = new PartitionSearcherReference( singlePartition.acquireSearcher() );
-        return new SimpleFulltextIndexReader( searcher, getPropertiesArray(), analyzer, propertyKeyTokenHolder, getSortTypes() );
+        return new SimpleFulltextIndexReader( searcher, getPropertiesArray(), analyzer, propertyKeyTokenHolder, getSortPropertiesArray(), getSortTypes() );
     }
 
     @Override
     protected FulltextIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedFulltextIndexReader( searchers, getPropertiesArray(), analyzer, propertyKeyTokenHolder, getSortTypes() );
+        return new PartitionedFulltextIndexReader( searchers, getPropertiesArray(), analyzer, propertyKeyTokenHolder, getSortPropertiesArray(), getSortTypes() );
     }
 }

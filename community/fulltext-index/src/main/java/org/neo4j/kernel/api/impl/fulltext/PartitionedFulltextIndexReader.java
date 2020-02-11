@@ -45,11 +45,11 @@ class PartitionedFulltextIndexReader extends FulltextIndexReader
 
     private final List<FulltextIndexReader> indexReaders;
 
-    PartitionedFulltextIndexReader( List<PartitionSearcher> partitionSearchers, String[] properties, Analyzer analyzer, TokenHolder propertyKeyTokenHolder, Map<String,String> sortTypes)
+    PartitionedFulltextIndexReader( List<PartitionSearcher> partitionSearchers, String[] properties, Analyzer analyzer, TokenHolder propertyKeyTokenHolder, String[] sortProperties, Map<String,String> sortTypes)
     {
         this( partitionSearchers.stream()
                 .map( PartitionSearcherReference::new )
-                .map( searcher -> new SimpleFulltextIndexReader( searcher, properties, analyzer, propertyKeyTokenHolder, sortTypes ) )
+                .map( searcher -> new SimpleFulltextIndexReader( searcher, properties, analyzer, propertyKeyTokenHolder, sortProperties, sortTypes ) )
                 .collect( Collectors.toList() ) );
     }
 

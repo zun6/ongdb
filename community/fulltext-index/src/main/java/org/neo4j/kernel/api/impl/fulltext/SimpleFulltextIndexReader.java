@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.values.storable.Value;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -52,35 +53,14 @@ class SimpleFulltextIndexReader extends FulltextIndexReader
     private final String[] sortProperties;
     private final Map<String,String> sortTypes;
 
-    SimpleFulltextIndexReader( SearcherReference searcherRef, String[] properties, Analyzer analyzer, TokenHolder propertyKeyTokenHolder )
-    {
-        this.searcherRef = searcherRef;
-        this.properties = properties;
-        this.analyzer = analyzer;
-        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
-        this.sortProperties = null;
-        this.sortTypes = null;
-    }
-
-    public SimpleFulltextIndexReader( SearcherReference searcherRef, Analyzer analyzer, TokenHolder propertyKeyTokenHolder, String[] properties,
-            String[] sortProperties )
+    SimpleFulltextIndexReader( SearcherReference searcherRef, String[] properties, Analyzer analyzer, TokenHolder propertyKeyTokenHolder,
+            String[] sortProperties, Map<String,String> sortTypes )
     {
         this.searcherRef = searcherRef;
         this.analyzer = analyzer;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.properties = properties;
         this.sortProperties = sortProperties;
-        this.sortTypes = null;
-    }
-
-    SimpleFulltextIndexReader( SearcherReference searcherRef,  String[] properties, Analyzer analyzer, TokenHolder propertyKeyTokenHolder,
-            Map<String,String> sortTypes )
-    {
-        this.searcherRef = searcherRef;
-        this.analyzer = analyzer;
-        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
-        this.properties = properties;
-        this.sortProperties = null;
         this.sortTypes = sortTypes;
     }
 
@@ -135,8 +115,20 @@ class SimpleFulltextIndexReader extends FulltextIndexReader
     {
         try
         {
+            if (!Arrays.asList( properties ).contains( sortFieldString ))
+            {
+                throw new RuntimeException( "Could not find sort property '" + sortFieldString + "'." );
+            }
 
-            Sort sort = buildSort( sortFieldString );
+            Sort sort;
+            if ( Arrays.asList( sortProperties ).contains( sortFieldString ) )
+            {
+                sort = buildSort( sortFieldString );
+            }
+            else
+            {
+                sort = new Sort( new SortField( sortFieldString + LuceneFulltextDocumentStructure.FIELD_FULLTEXT_SORT, SortField.Type.STRING ) );
+            }
 
             DocValuesCollector docValuesCollector = new DocValuesCollector( true );
             getIndexSearcher().search( query, docValuesCollector );
