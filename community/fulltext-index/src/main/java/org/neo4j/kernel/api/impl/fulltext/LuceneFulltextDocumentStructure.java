@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -33,6 +34,7 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -105,7 +107,7 @@ public class LuceneFulltextDocumentStructure
         if( value.valueGroup().equals( ValueGroup.TEXT ))
         {
             // Does this work?
-            return new TextField( sortKey, (String) value.asObject(), NO );
+            return new SortedDocValuesField( sortKey, new BytesRef( (String) value.asObject() ) );
         }
         return null;
     }
@@ -161,7 +163,7 @@ public class LuceneFulltextDocumentStructure
         }
         if (sortType.equalsIgnoreCase( "STRING" ))
         {
-            return sortField instanceof TextField;
+            return sortField instanceof SortedDocValuesField;
         }
         return false;
     }
@@ -230,7 +232,7 @@ public class LuceneFulltextDocumentStructure
                         if ( value != null )
                         {
                             Field sortableField = encodeSortableValueField( name, value );
-                            if ( validateSortType( sortableField, sortTypes.get( name ) ) )
+                            if ( sortableField != null && validateSortType( sortableField, sortTypes.get( name ) ) )
                             {
                                 document.add( sortableField );
                             }
