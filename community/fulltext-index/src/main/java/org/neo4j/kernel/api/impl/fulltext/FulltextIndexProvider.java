@@ -357,7 +357,6 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
         SchemaDescriptor schema = SchemaDescriptorFactory.multiTokenSort( entityTokenIds, type, propertyIds, sortIds, sortTypes);
         indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
         indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT, defaultEventuallyConsistentSetting );
-        indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_SORT_ENABLED, true );
         return new FulltextSchemaDescriptor( schema, indexConfiguration );
     }
 
