@@ -431,10 +431,10 @@ public class SchemaRuleSerialization
 //            List<Integer> truePropIds = Arrays.stream( schema.getPropertyIds() ).filter( p -> !sortIds.contains( p ) ).boxed().collect( Collectors.toList() );
 //            int[] propIds = truePropIds.stream().mapToInt( i -> i ).toArray();
 
-            int[] propIds = Arrays.stream( schema.getPropertyIds() ).limit( schema.getPropertyIds().length - schema.getSortIds().length ).toArray();
+//            int[] propIds = Arrays.stream( schema.getPropertyIds() ).limit( schema.getPropertyIds().length - schema.getSortIds().length ).toArray();
 
             putIds( schema.getEntityTokenIds() );
-            putIds( propIds );
+            putIds( schema.getPropertyIds() );
             putIds( schema.getSortIds() );
         }
 
@@ -478,7 +478,7 @@ public class SchemaRuleSerialization
                     + 2 // entity token count
                     + 4 * schema.getEntityTokenIds().length // the actual property ids
                     + 2 // property id count
-                    + 4 * (schema.getPropertyIds().length - schema.getSortIds().length) // the actual property ids
+                    + 4 * schema.getPropertyIds().length // the actual property ids
                     + 2 // sort id count
                     + 4 * schema.getSortIds().length; // the actual sort ids
         }

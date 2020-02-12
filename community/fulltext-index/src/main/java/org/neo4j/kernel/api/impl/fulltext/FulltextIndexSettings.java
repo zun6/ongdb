@@ -153,11 +153,11 @@ public class FulltextIndexSettings
         settings.setProperty( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Boolean.toString( descriptor.isEventuallyConsistent() ) );
         settings.setProperty( INDEX_CONFIG_ANALYZER, descriptor.analyzerName() );
         settings.setProperty( INDEX_CONFIG_PROPERTY_NAMES, descriptor.propertyNames().stream().collect( Collectors.joining( ", ", "[", "]" )) );
-        settings.setProperty( "_propertyIds", Arrays.toString( descriptor.properties() ) );
+        settings.setProperty( "_propertyIds", Arrays.toString( descriptor.schema().getPropertyIds() ) );
         settings.setProperty( "_name", descriptor.name() );
         settings.setProperty( "_schema_entityType", descriptor.schema().entityType().name() );
         settings.setProperty( "_schema_entityTokenIds", Arrays.toString( descriptor.schema().getEntityTokenIds() ) );
-        settings.setProperty( "_sortIds", Arrays.toString( descriptor.sortIds() ) );
+        settings.setProperty( "_sortIds", Arrays.toString( descriptor.schema().getSortIds() ) );
         try ( StoreChannel channel = fs.create( indexConfigFile );
                 Writer writer = fs.openAsWriter( indexConfigFile, StandardCharsets.UTF_8, false ) )
         {

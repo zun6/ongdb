@@ -103,7 +103,7 @@ public class MultiTokenSchemaDescriptor implements SchemaDescriptor
     @Override
     public int[] getPropertyIds()
     {
-        return ArrayUtils.addAll(propertyIds, sortIds);
+        return propertyIds;
     }
 
     @Override

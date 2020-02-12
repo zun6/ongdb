@@ -19,8 +19,7 @@
  */
 package org.neo4j.storageengine.api.schema;
 
-import java.util.Optional;
-
+import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
@@ -30,6 +29,8 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.values.storable.ValueCategory;
+
+import java.util.Optional;
 
 import static java.lang.String.format;
 
@@ -89,7 +90,7 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
     @Override
     public int[] properties()
     {
-        return schema.getPropertyIds();
+        return ArrayUtils.addAll( schema.getPropertyIds(), schema.getSortIds() );
     }
 
     public int[] sortIds()
