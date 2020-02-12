@@ -49,7 +49,7 @@ public class MultiTokenSchemaDescriptor implements SchemaDescriptor
         this.entityTokens = entityTokens;
         this.entityType = entityType;
         this.propertyIds = propertyIds;
-        this.sortIds = null;
+        this.sortIds = new int[0];
         this.sortTypes = null;
     }
 
@@ -142,6 +142,7 @@ public class MultiTokenSchemaDescriptor implements SchemaDescriptor
         return this;
     }
 
+    @Override
     public int[] getSortIds()
     {
         return sortIds;

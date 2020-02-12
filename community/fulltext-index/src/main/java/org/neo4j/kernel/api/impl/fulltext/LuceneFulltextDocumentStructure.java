@@ -208,39 +208,26 @@ public class LuceneFulltextDocumentStructure
         private void setValuesWithSort( Collection<String> propertyNames, Value[] values, Collection<String> sortProperties, Map<String,String> sortTypes )
         {
             int i = 0;
-            Iterator<String> spi = sortProperties.iterator();
-
-            boolean isSortProperty = false;
 
             for ( String name : propertyNames )
             {
-                isSortProperty = false;
-                // This will only work if all sortProperties are always after all non-sort props in propertyNames; Is it?
-                if ( sortProperties.contains( name ) && spi.hasNext() )
-                {
-                    String next = spi.next();
 
-                    if ( name.equals( next ) )
-                    {
-                        isSortProperty = true;
-                        Value value = values[i++];
-                        if ( value != null )
-                        {
-                            Field sortableField = encodeSortableValueField( name, value );
-                            if ( sortableField != null && validateSortType( sortableField, sortTypes.get( name ) ) )
-                            {
-                                document.add( sortableField );
-                            }
-                        }
-                    }
+                Value value = values[i++];
+                if ( value != null && value.valueGroup() == ValueGroup.TEXT )
+                {
+                    addFulltextFieldsToDocument( name, value );
                 }
+            }
 
-                if ( !isSortProperty )
+            for ( String name : sortProperties )
+            {
+                Value value = values[i++];
+                if ( value != null )
                 {
-                    Value value = values[i++];
-                    if ( value != null && value.valueGroup() == ValueGroup.TEXT )
+                    Field sortableField = encodeSortableValueField( name, value );
+                    if ( sortableField != null && validateSortType( sortableField, sortTypes.get( name ) ) )
                     {
-                        addFulltextFieldsToDocument( name, value );
+                        document.add( sortableField );
                     }
                 }
             }

@@ -20,6 +20,13 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
+import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
+import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,14 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
-import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
-import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.core.TokenHolder;
-import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 public class FulltextIndexSettings
 {
@@ -65,17 +64,27 @@ public class FulltextIndexSettings
         boolean eventuallyConsistent = Boolean.parseBoolean( indexConfiguration.getProperty( INDEX_CONFIG_EVENTUALLY_CONSISTENT ) );
         String analyzerName = indexConfiguration.getProperty( INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
         Analyzer analyzer = createAnalyzer( analyzerName );
+
+        List<Integer> sortIdList = new ArrayList<>();
+        if ( descriptor.schema() instanceof FulltextSchemaDescriptor )
+        {
+            int[] sortIds = ((FulltextSchemaDescriptor) descriptor.schema()).getSortIds();
+            sortIdList = Arrays.stream( sortIds ).boxed().collect( Collectors.toList());
+        }
+
         List<String> names = new ArrayList<>();
         for ( int propertyKeyId : descriptor.schema().getPropertyIds() )
         {
-            try
+            if (!sortIdList.contains( propertyKeyId ))
             {
-                names.add( propertyKeyTokenHolder.getTokenById( propertyKeyId ).name() );
-            }
-            catch ( TokenNotFoundException e )
-            {
-                throw new IllegalStateException( "Property key id not found.",
-                        new PropertyKeyIdNotFoundKernelException( propertyKeyId, e ) );
+                try
+                {
+                    names.add( propertyKeyTokenHolder.getTokenById( propertyKeyId ).name() );
+                }
+                catch ( TokenNotFoundException e )
+                {
+                    throw new IllegalStateException( "Property key id not found.", new PropertyKeyIdNotFoundKernelException( propertyKeyId, e ) );
+                }
             }
         }
         List<String> propertyNames = Collections.unmodifiableList( names );
@@ -148,6 +157,7 @@ public class FulltextIndexSettings
         settings.setProperty( "_name", descriptor.name() );
         settings.setProperty( "_schema_entityType", descriptor.schema().entityType().name() );
         settings.setProperty( "_schema_entityTokenIds", Arrays.toString( descriptor.schema().getEntityTokenIds() ) );
+        settings.setProperty( "_sortIds", Arrays.toString( descriptor.sortIds() ) );
         try ( StoreChannel channel = fs.create( indexConfigFile );
                 Writer writer = fs.openAsWriter( indexConfigFile, StandardCharsets.UTF_8, false ) )
         {

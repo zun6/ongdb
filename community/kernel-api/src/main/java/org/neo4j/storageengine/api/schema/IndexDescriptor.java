@@ -92,6 +92,11 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
         return schema.getPropertyIds();
     }
 
+    public int[] sortIds()
+    {
+        return schema.getSortIds();
+    }
+
     @Override
     public String providerKey()
     {

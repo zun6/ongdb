@@ -115,10 +115,10 @@ class SimpleFulltextIndexReader extends FulltextIndexReader
     {
         try
         {
-            if (!Arrays.asList( properties ).contains( sortFieldString ))
-            {
-                throw new RuntimeException( "Could not find sort property '" + sortFieldString + "'." );
-            }
+//            if (!Arrays.asList( properties ).contains( sortFieldString ))
+//            {
+//                throw new RuntimeException( "Could not find sort property '" + sortFieldString + "'." );
+//            }
 
             Sort sort;
             if ( Arrays.asList( sortProperties ).contains( sortFieldString ) )

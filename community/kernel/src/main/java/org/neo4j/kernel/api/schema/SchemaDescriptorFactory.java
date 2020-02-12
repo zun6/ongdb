@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.schema;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.storageengine.api.EntityType;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class SchemaDescriptorFactory
@@ -59,6 +60,24 @@ public class SchemaDescriptorFactory
             throw new IllegalArgumentException( "Cannot create schemadescriptor of type :" + entityType );
         }
         return new MultiTokenSchemaDescriptor( entityTokens, entityType, propertyIds );
+    }
+
+    public static MultiTokenSchemaDescriptor multiToken( int[] entityTokens, EntityType entityType, int[] propertyIds, int[] sortIds )
+    {
+        validatePropertyIds( propertyIds );
+        validatePropertyIds( sortIds );
+        switch ( entityType )
+        {
+        case NODE:
+            validateLabelIds( entityTokens );
+            break;
+        case RELATIONSHIP:
+            validateRelationshipTypeIds( entityTokens );
+            break;
+        default:
+            throw new IllegalArgumentException( "Cannot create schemadescriptor of type :" + entityType );
+        }
+        return new MultiTokenSchemaDescriptor( entityTokens, entityType, propertyIds, sortIds, new HashMap<>(  ) );
     }
 
     public static MultiTokenSchemaDescriptor multiTokenSort( int[] entityTokens, EntityType entityType, int[] propertyIds, int[] sortIds, Map<String,String> sortTypes )
