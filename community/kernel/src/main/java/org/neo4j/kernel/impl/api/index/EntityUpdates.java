@@ -19,17 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-
 import org.neo4j.collection.PrimitiveArrays;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -37,6 +32,11 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Value;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
@@ -246,7 +246,7 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
             SchemaDescriptor schema = indexKey.schema();
             boolean relevantBefore = relevantBefore( schema );
             boolean relevantAfter = relevantAfter( schema );
-            int[] propertyIds = schema.getPropertyIds();
+            int[] propertyIds = getAllRelevantIds( schema );
             if ( relevantBefore && !relevantAfter )
             {
                 indexUpdates.add( IndexEntryUpdate.remove( entityId, indexKey, valuesBefore( propertyIds ) ) );
@@ -268,12 +268,12 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
 
     private boolean relevantBefore( SchemaDescriptor schema )
     {
-        return schema.isAffected( entityTokensBefore ) && hasPropsBefore( schema.getPropertyIds(), schema.propertySchemaType() );
+        return schema.isAffected( entityTokensBefore ) && hasPropsBefore( getAllRelevantIds( schema ), schema.propertySchemaType() );
     }
 
     private boolean relevantAfter( SchemaDescriptor schema )
     {
-        return schema.isAffected( entityTokensAfter ) && hasPropsAfter( schema.getPropertyIds(), schema.propertySchemaType() );
+        return schema.isAffected( entityTokensAfter ) && hasPropsAfter( getAllRelevantIds( schema ), schema.propertySchemaType() );
     }
 
     private void loadProperties( PropertyLoader propertyLoader, MutableIntSet additionalPropertiesToLoad, EntityType type )
@@ -298,6 +298,14 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
                 target.add( propertyId );
             }
         }
+
+        for ( int sortId : schema.getSortIds() )
+        {
+            if ( knownProperties.get( sortId ) == null )
+            {
+                target.add( sortId );
+            }
+        }
     }
 
     private boolean atLeastOneRelevantChange( SchemaDescriptor schema )
@@ -309,6 +317,14 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
             for ( int propertyId : schema.getPropertyIds() )
             {
                 if ( knownProperties.containsKey( propertyId ) )
+                {
+                    return true;
+                }
+            }
+
+            for ( int sortId : schema.getSortIds() )
+            {
+                if ( knownProperties.containsKey( sortId ) )
                 {
                     return true;
                 }
@@ -561,5 +577,10 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
     private static PropertyValue changed( Value before, Value after )
     {
         return new PropertyValue( before, after, PropertyValueType.Changed );
+    }
+
+    private int[] getAllRelevantIds( SchemaDescriptor schema)
+    {
+        return ArrayUtils.addAll( schema.getPropertyIds(), schema.getSortIds() );
     }
 }
